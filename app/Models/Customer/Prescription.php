@@ -16,6 +16,9 @@ class Prescription extends Model
         'status',
         'name',
         'notes',
+        'repeats_total',
+        'repeats_used',
+        'next_repeat_date',
     ];
 
     public function user()

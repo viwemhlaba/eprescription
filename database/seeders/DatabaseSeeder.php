@@ -7,6 +7,9 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 use Database\Seeders\CustomerSeeder;
 use Database\Seeders\Customer\PrescriptionSeeder;
+use Database\Seeders\DoctorSeeder;
+use Database\Seeders\MedicationSeeder;
+use Database\Seeders\PrescriptionItemSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -18,13 +21,12 @@ class DatabaseSeeder extends Seeder
         // User::factory(10)->create();
 
         $this->call([
+            DoctorSeeder::class,
+            MedicationSeeder::class,
             CustomerSeeder::class,
             PrescriptionSeeder::class,
+            PrescriptionItemSeeder::class,
+            CustomerOrderSeeder::class,
         ]);
-
-        // User::factory()->create([
-        //     'name' => 'Test User',
-        //     'email' => 'test@example.com',
-        // ]);
     }
 }

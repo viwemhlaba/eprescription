@@ -29,7 +29,7 @@ export function AppSidebar() {
 
     const customerNav: NavItem[] = [
         { title: 'Profile', href: '/customer/profile', icon: UserCheck },
-        { title: 'My Prescriptions', href: '/customer/prescriptions', icon: FileText },
+        { title: 'Prescriptions', href: '/customer/prescriptions', icon: FileText },
         // { title: 'Upload Prescription', href: '/customer/prescriptions/create', icon: FilePlus2 },
         { title: 'Repeats', href: '/customer/repeats', icon: Repeat },
         { title: 'Reports', href: '/customer/reports', icon: FileText },

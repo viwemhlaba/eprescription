@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use App\Http\Requests\Customer\Prescription\UpdatePrescriptionRequest;
 use App\Http\Requests\Customer\Prescription\StorePrescriptionRequest;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 
 
@@ -104,4 +105,65 @@ class PrescriptionController extends Controller
 
         return redirect()->back()->with('success', 'Prescription deleted successfully.');
     }
+
+    public function requestRepeat(Prescription $prescription)
+    {
+        if ($prescription->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        if ($prescription->repeats_used >= $prescription->repeats_total) {
+            return back()->with('error', 'You have used all available repeats.');
+        }
+
+        //$prescription->increment('repeats_used');
+
+        // Optional: Calculate the next repeat date (e.g., 30 days later)
+        $prescription->next_repeat_date = now()->addDays(30)->format('Y-m-d');
+        $prescription->status = 'repeat_pending';
+        $prescription->save();
+
+        return back()->with('success', 'Repeat requested successfully.');
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $query = Prescription::where('user_id', Auth::id());
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('from_date')) {
+            $query->whereDate('created_at', '>=', $request->from_date);
+        }
+
+        if ($request->filled('to_date')) {
+            $query->whereDate('created_at', '<=', $request->to_date);
+        }
+
+        $prescriptions = $query->latest()->get();
+
+        $pdf = Pdf::loadView('pdf.prescriptions', [
+            'prescriptions' => $prescriptions,
+            'user' => Auth::user(),
+        ]);
+
+        return $pdf->download('prescription-report.pdf');
+    }
+
+    public function repeats()
+    {
+        $prescriptions = Prescription::where('user_id', Auth::id())
+            ->whereNotNull('repeats_total')
+            ->latest()
+            ->get();
+    
+        return Inertia::render('Customer/Repeats/Index', [
+            'prescriptions' => $prescriptions,
+        ]);
+    }
+    
+
+
 }
