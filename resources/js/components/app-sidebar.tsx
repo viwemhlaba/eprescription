@@ -12,7 +12,22 @@ import {
 } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, FileText, FilePlus2, Repeat, UserCheck, PackageSearch } from 'lucide-react';
+import {
+    BookOpen,
+    Folder,
+    LayoutGrid,
+    FileText,
+    Repeat,
+    UserCheck,
+    PackageSearch,
+    Hospital,
+    Pill,
+    Users,
+    ClipboardList,
+    ShoppingCart,
+    Settings,
+    FlaskRound,
+} from 'lucide-react';
 import AppLogo from './app-logo';
 
 export function AppSidebar() {
@@ -30,11 +45,10 @@ export function AppSidebar() {
     const customerNav: NavItem[] = [
         { title: 'Profile', href: '/customer/profile', icon: UserCheck },
         { title: 'Prescriptions', href: '/customer/prescriptions', icon: FileText },
-        // { title: 'Upload Prescription', href: '/customer/prescriptions/create', icon: FilePlus2 },
         { title: 'Repeats', href: '/customer/repeats', icon: Repeat },
+        { title: 'Orders', href: '/customer/orders', icon: ShoppingCart },
+        { title: 'Stock', href: '/customer/stock', icon: PackageSearch }, // Potentially not needed for customer, but kept as per previous
         { title: 'Reports', href: '/customer/reports', icon: FileText },
-        { title: 'Orders', href: '/customer/orders', icon: FileText },
-        { title: 'Stock', href: '/customer/stock', icon: PackageSearch },
     ];
 
     const pharmacistNav: NavItem[] = [
@@ -44,9 +58,55 @@ export function AppSidebar() {
     ];
 
     const managerNav: NavItem[] = [
-        { title: 'Manage Stock', href: '/manager/stock', icon: PackageSearch },
-        { title: 'Manage Users', href: '/manager/users', icon: UserCheck },
-        { title: 'Reports', href: '/manager/reports', icon: FileText },
+
+        {
+            title: 'Pharmacy',
+            href: '/manager/pharmacy',
+            icon: ClipboardList,
+            items: [
+                { title: 'Details', href: '/manager/pharmacy/details', icon: ClipboardList },
+            ],
+        },
+        {
+            title: 'Catalogue',
+            href: '/manager/catalogue',
+            icon: Pill,
+            items: [
+                { title: 'Medications', href: '/manager/catalogue/medications', icon: Pill },
+                { title: 'Active Ingredients', href: '/manager/catalogue/ingredients', icon: FlaskRound },
+                { title: 'Dosage Forms', href: '/manager/catalogue/dosage-forms', icon: ClipboardList },
+            ],
+        },
+        {
+            title: 'Suppliers',
+            href: '/manager/suppliers',
+            icon: ShoppingCart,
+        },
+        {
+            title: 'People',
+            href: '/manager/people',
+            icon: Users,
+            items: [
+                { title: 'Pharmacists', href: '/manager/people/pharmacists', icon: UserCheck },
+                { title: 'Doctors', href: '/manager/people/doctors', icon: UserCheck },
+            ],
+        },
+        {
+            title: 'Stock',
+            href: '/manager/stock',
+            icon: PackageSearch,
+        },
+        {
+            title: 'Orders',
+            href: '/manager/orders',
+            icon: ShoppingCart, // Reusing for now
+        },
+        {
+            title: 'Reports',
+            href: '/manager/reports',
+            icon: FileText,
+        },
+        
     ];
 
     const footerNavItems: NavItem[] = [
