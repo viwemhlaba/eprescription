@@ -5,17 +5,11 @@ namespace Database\Factories;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use App\Models\Medication\ActiveIngredient;
 use App\Models\Medication\DosageForm;
+use App\Models\Medication\Medication;
 
-/**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Medication\Medication>
- */
 class MedicationFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
+    protected $model = Medication::class;
     public function definition(): array
     {
         return [

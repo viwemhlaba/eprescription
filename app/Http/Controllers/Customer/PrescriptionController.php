@@ -21,7 +21,8 @@ class PrescriptionController extends Controller
      */
     public function index()
     {
-        $prescriptions = Prescription::where('user_id', Auth::id())
+        $prescriptions = Prescription::with(['doctor', 'items.medication']) // <-- add relationships
+            ->where('user_id', Auth::id())
             ->latest()
             ->get();
 
@@ -62,7 +63,7 @@ class PrescriptionController extends Controller
         if ($prescription->user_id !== Auth::id()) {
             abort(403);
         }
-        
+
         if ($request->hasFile('prescription_file')) {
             // Delete old file
             if ($prescription->file_path && Storage::disk('public')->exists($prescription->file_path)) {
@@ -158,12 +159,9 @@ class PrescriptionController extends Controller
             ->whereNotNull('repeats_total')
             ->latest()
             ->get();
-    
+
         return Inertia::render('Customer/Repeats/Index', [
             'prescriptions' => $prescriptions,
         ]);
     }
-    
-
-
 }

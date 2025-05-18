@@ -1,5 +1,4 @@
 import { NavFooter } from '@/components/nav-footer';
-import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
     Sidebar,
@@ -10,7 +9,7 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { type NavItem } from '@/types';
+import { type NavItem } from '@/types'; // Make sure this type is defined
 import { Link, usePage } from '@inertiajs/react';
 import {
     BookOpen,
@@ -30,6 +29,32 @@ import {
 } from 'lucide-react';
 import AppLogo from './app-logo';
 
+interface NavItemComponentProps { // Define props for NavItemComponent
+    item: NavItem;
+}
+
+function NavItemComponent({ item }: NavItemComponentProps) {
+    if (item.items && item.items.length > 0 && !item.href) {
+        // Render a heading for parent items with children
+        return (
+            <div className="pt-2 pb-1">
+                <span className="text-xs font-semibold uppercase text-muted-foreground">{item.title}</span>
+            </div>
+        );
+    }
+
+    // Render a regular link item
+    return (
+        <Link
+            href={item.href!}
+            className="group flex w-full items-center rounded-md px-2 py-1.5 text-sm font-medium hover:bg-accent hover:text-accent-foreground text-muted-foreground"
+        >
+            {item.icon && <item.icon className="mr-2 h-4 w-4" />}
+            {item.title}
+        </Link>
+    );
+}
+
 export function AppSidebar() {
     const { auth } = usePage().props as any;
     const role = auth?.user?.role;
@@ -46,7 +71,7 @@ export function AppSidebar() {
         { title: 'Profile', href: '/customer/profile', icon: UserCheck },
         { title: 'Prescriptions', href: '/customer/prescriptions', icon: FileText },
         { title: 'Repeats', href: '/customer/repeats', icon: Repeat },
-        { title: 'Orders', href: '/customer/orders', icon: ShoppingCart },
+        { title: 'Orders', href: '/customer/orders', icon: PackageSearch },
         { title: 'Stock', href: '/customer/stock', icon: PackageSearch }, // Potentially not needed for customer, but kept as per previous
         { title: 'Reports', href: '/customer/reports', icon: FileText },
     ];
@@ -58,24 +83,15 @@ export function AppSidebar() {
     ];
 
     const managerNav: NavItem[] = [
-
         {
             title: 'Pharmacy',
-            href: '/manager/pharmacy',
+            href: '/manager/pharmacy/details', // Direct link to details
             icon: ClipboardList,
-            items: [
-                { title: 'Details', href: '/manager/pharmacy/details', icon: ClipboardList },
-            ],
         },
         {
             title: 'Catalogue',
-            href: '/manager/catalogue',
+            href: '/manager/catalogue/medications', // Direct link to medications
             icon: Pill,
-            items: [
-                { title: 'Medications', href: '/manager/catalogue/medications', icon: Pill },
-                { title: 'Active Ingredients', href: '/manager/catalogue/ingredients', icon: FlaskRound },
-                { title: 'Dosage Forms', href: '/manager/catalogue/dosage-forms', icon: ClipboardList },
-            ],
         },
         {
             title: 'Suppliers',
@@ -84,12 +100,8 @@ export function AppSidebar() {
         },
         {
             title: 'People',
-            href: '/manager/people',
+            href: '/manager/people/pharmacists', // Direct link to pharmacists
             icon: Users,
-            items: [
-                { title: 'Pharmacists', href: '/manager/people/pharmacists', icon: UserCheck },
-                { title: 'Doctors', href: '/manager/people/doctors', icon: UserCheck },
-            ],
         },
         {
             title: 'Stock',
@@ -106,18 +118,17 @@ export function AppSidebar() {
             href: '/manager/reports',
             icon: FileText,
         },
-        
+        {
+            title: 'Settings',
+            href: '/manager/settings',
+            icon: Settings,
+        },
     ];
 
     const footerNavItems: NavItem[] = [
         {
-            title: 'Repository',
-            href: 'https://github.com/laravel/react-starter-kit',
-            icon: Folder,
-        },
-        {
-            title: 'Documentation',
-            href: 'https://laravel.com/docs/starter-kits',
+            title: 'Home',
+            href: '/',
             icon: BookOpen,
         },
     ];
@@ -145,7 +156,27 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={mainNavItems} />
+                <div className="space-y-1">
+                    {mainNavItems.map((item) => (
+                        <NavItemComponent key={item.href || item.title} item={item} />
+                    ))}
+                    {/* Render headings for the former parent menu items */}
+                    {managerNav.find(item => item.title === 'Pharmacy')?.items && (
+                        <div className="pt-2 pb-1">
+                            <span className="text-xs font-semibold uppercase text-muted-foreground">Pharmacy</span>
+                        </div>
+                    )}
+                    {managerNav.find(item => item.title === 'Catalogue')?.items && (
+                        <div className="pt-2 pb-1">
+                            <span className="text-xs font-semibold uppercase text-muted-foreground">Catalogue</span>
+                        </div>
+                    )}
+                    {managerNav.find(item => item.title === 'People')?.items && (
+                        <div className="pt-2 pb-1">
+                            <span className="text-xs font-semibold uppercase text-muted-foreground">People</span>
+                        </div>
+                    )}
+                </div>
             </SidebarContent>
 
             <SidebarFooter>

@@ -15,7 +15,6 @@ class PrescriptionItemSeeder extends Seeder
         $medications = Medication::all();
 
         foreach ($prescriptions as $prescription) {
-            // Assign 1–3 medications per prescription
             $meds = $medications->random(rand(1, 3));
 
             foreach ($meds as $med) {

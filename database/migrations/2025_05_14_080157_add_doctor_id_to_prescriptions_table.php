@@ -11,11 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-
         Schema::table('prescriptions', function (Blueprint $table) {
-            $table->integer('repeats_total')->default(0); // Total number of allowed repeats
-            $table->integer('repeats_used')->default(0);  // How many have been used
-            $table->date('next_repeat_date')->nullable(); // When the next repeat is due
+             $table->foreignId('doctor_id')->nullable()->constrained()->onDelete('cascade');
         });
     }
 
@@ -25,7 +22,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('prescriptions', function (Blueprint $table) {
-            $table->dropColumn(['repeats_total', 'repeats_used', 'next_repeat_date']);
+            $table->dropForeign(['doctor_id']);
+            $table->dropColumn('doctor_id');
         });
     }
 };
