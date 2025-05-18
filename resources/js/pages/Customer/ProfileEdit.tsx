@@ -7,8 +7,29 @@ import AppLayout from '@/layouts/app-layout';
 import { useForm, usePage } from '@inertiajs/react';
 import { FormEvent } from 'react';
 
+type ProfileEditPageProps = {
+    auth: {
+        user: {
+            name: string;
+            email: string;
+            // add other user fields if needed
+        };
+    };
+    customer: {
+        id_number: string;
+        cellphone_number: string;
+        allergies: string;
+        state: string;
+        city: string;
+        street: string;
+        house_number: string;
+        postal_code: string;
+        // add other customer fields if needed
+    };
+};
+
 export default function ProfileEdit() {
-    const { auth, customer } = usePage().props as any;
+    const { auth, customer } = usePage<ProfileEditPageProps>().props;
     const user = auth?.user || {};
 
     const { data, setData, put, processing, errors } = useForm({

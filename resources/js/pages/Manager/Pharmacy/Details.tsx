@@ -83,7 +83,7 @@ export default function PharmacyDetailsPage() {
         setDetails((prev) => ({ ...prev, [field]: value }));
     };
 
-    const handleHoursChange = (day: keyof PharmacyDetails['operatingHours'], field: 'open' | 'startTime' | 'endTime', value: any) => {
+    const handleHoursChange = (day: keyof PharmacyDetails['operatingHours'], field: 'open' | 'startTime' | 'endTime', value: boolean | string) => {
         setDetails((prev) => ({
             ...prev,
             operatingHours: {

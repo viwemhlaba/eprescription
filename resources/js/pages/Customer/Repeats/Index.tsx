@@ -3,7 +3,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import { Head } from '@inertiajs/react';
 
-export default function RepeatIndex({ prescriptions }: { prescriptions: any[] }) {
+interface Prescription {
+    id: number;
+    name: string;
+    repeats_used: number;
+    repeats_total: number;
+    next_repeat_date: string | null;
+    status: string;
+}
+
+export default function RepeatIndex({ prescriptions }: { prescriptions: Prescription[] }) {
     const isOverdue = (date: string | null) => {
         if (!date) return false;
         const today = new Date();

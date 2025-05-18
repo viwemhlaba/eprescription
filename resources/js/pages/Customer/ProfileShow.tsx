@@ -6,8 +6,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 
+interface ProfilePageProps {
+    auth: {
+        user: {
+            name: string;
+            email: string;
+            // add other user fields if needed
+        };
+    };
+    customer: {
+        id_number: string;
+        cellphone_number: string;
+        allergies: string;
+        state: string;
+        city: string;
+        street: string;
+        house_number: string;
+        postal_code: string;
+        // add other customer fields if needed
+    };
+    [key: string]: unknown; // Add index signature to satisfy PageProps constraint
+}
+
 export default function ProfileShow() {
-    const { auth, customer } = usePage().props as any;
+    const { auth, customer } = usePage<ProfilePageProps>().props;
     const user = auth?.user || {};
 
     const { data } = useForm({

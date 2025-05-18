@@ -8,7 +8,19 @@ import { useForm, usePage } from '@inertiajs/react';
 import { FormEvent } from 'react';
 
 export default function ProfileCreate() {
-    const { auth } = usePage().props as any;
+    type AuthUser = {
+        name: string;
+        email: string;
+        // add other user fields as needed
+    };
+
+    type PageProps = {
+        auth: {
+            user: AuthUser;
+        };
+    };
+
+    const { auth } = usePage<PageProps>().props;
     const user = auth?.user || {};
 
     const { data, setData, post, processing, errors } = useForm({
