@@ -1,5 +1,6 @@
 import js from '@eslint/js';
 import prettier from 'eslint-config-prettier';
+import prettierPlugin from 'eslint-plugin-prettier';
 import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import globals from 'globals';
@@ -35,6 +36,15 @@ export default [
         rules: {
             'react-hooks/rules-of-hooks': 'error',
             'react-hooks/exhaustive-deps': 'warn',
+        },
+    },
+    // Add Prettier plugin recommended config
+    {
+        plugins: {
+            prettier: prettierPlugin,
+        },
+        rules: {
+            ...prettierPlugin.configs.recommended.rules,
         },
     },
     {

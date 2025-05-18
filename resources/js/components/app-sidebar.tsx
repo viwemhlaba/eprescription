@@ -1,35 +1,13 @@
 import { NavFooter } from '@/components/nav-footer';
 import { NavUser } from '@/components/nav-user';
-import {
-    Sidebar,
-    SidebarContent,
-    SidebarFooter,
-    SidebarHeader,
-    SidebarMenu,
-    SidebarMenuButton,
-    SidebarMenuItem,
-} from '@/components/ui/sidebar';
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types'; // Make sure this type is defined
 import { Link, usePage } from '@inertiajs/react';
-import {
-    BookOpen,
-    Folder,
-    LayoutGrid,
-    FileText,
-    Repeat,
-    UserCheck,
-    PackageSearch,
-    Hospital,
-    Pill,
-    Users,
-    ClipboardList,
-    ShoppingCart,
-    Settings,
-    FlaskRound,
-} from 'lucide-react';
+import { BookOpen, ClipboardList, FileText, LayoutGrid, PackageSearch, Pill, Repeat, Settings, ShoppingCart, UserCheck, Users } from 'lucide-react';
 import AppLogo from './app-logo';
 
-interface NavItemComponentProps { // Define props for NavItemComponent
+interface NavItemComponentProps {
+    // Define props for NavItemComponent
     item: NavItem;
 }
 
@@ -38,7 +16,7 @@ function NavItemComponent({ item }: NavItemComponentProps) {
         // Render a heading for parent items with children
         return (
             <div className="pt-2 pb-1">
-                <span className="text-xs font-semibold uppercase text-muted-foreground">{item.title}</span>
+                <span className="text-muted-foreground text-xs font-semibold uppercase">{item.title}</span>
             </div>
         );
     }
@@ -47,7 +25,7 @@ function NavItemComponent({ item }: NavItemComponentProps) {
     return (
         <Link
             href={item.href!}
-            className="group flex w-full items-center rounded-md px-2 py-1.5 text-sm font-medium hover:bg-accent hover:text-accent-foreground text-muted-foreground"
+            className="group hover:bg-accent hover:text-accent-foreground text-muted-foreground flex w-full items-center rounded-md px-2 py-1.5 text-sm font-medium"
         >
             {item.icon && <item.icon className="mr-2 h-4 w-4" />}
             {item.title}
@@ -56,7 +34,20 @@ function NavItemComponent({ item }: NavItemComponentProps) {
 }
 
 export function AppSidebar() {
-    const { auth } = usePage().props as any;
+    interface AuthUser {
+        role: string;
+        // Add other user properties if needed
+    }
+
+    interface PageProps {
+        auth?: {
+            user?: AuthUser;
+            // Add other auth properties if needed
+        };
+        // Add other page props if needed
+    }
+
+    const { auth } = usePage<PageProps>().props;
     const role = auth?.user?.role;
 
     const sharedNav: NavItem[] = [
@@ -161,19 +152,19 @@ export function AppSidebar() {
                         <NavItemComponent key={item.href || item.title} item={item} />
                     ))}
                     {/* Render headings for the former parent menu items */}
-                    {managerNav.find(item => item.title === 'Pharmacy')?.items && (
+                    {managerNav.find((item) => item.title === 'Pharmacy')?.items && (
                         <div className="pt-2 pb-1">
-                            <span className="text-xs font-semibold uppercase text-muted-foreground">Pharmacy</span>
+                            <span className="text-muted-foreground text-xs font-semibold uppercase">Pharmacy</span>
                         </div>
                     )}
-                    {managerNav.find(item => item.title === 'Catalogue')?.items && (
+                    {managerNav.find((item) => item.title === 'Catalogue')?.items && (
                         <div className="pt-2 pb-1">
-                            <span className="text-xs font-semibold uppercase text-muted-foreground">Catalogue</span>
+                            <span className="text-muted-foreground text-xs font-semibold uppercase">Catalogue</span>
                         </div>
                     )}
-                    {managerNav.find(item => item.title === 'People')?.items && (
+                    {managerNav.find((item) => item.title === 'People')?.items && (
                         <div className="pt-2 pb-1">
-                            <span className="text-xs font-semibold uppercase text-muted-foreground">People</span>
+                            <span className="text-muted-foreground text-xs font-semibold uppercase">People</span>
                         </div>
                     )}
                 </div>

@@ -29,8 +29,10 @@ export default function PrescriptionCreate() {
 
                 <form onSubmit={handleSubmit} className="max-w-2xl space-y-6 py-6">
                     <div className="grid grid-rows-2 gap-4">
-                        <div className='gap-4'>
-                            <Label htmlFor="name" className="pb-4">Prescription Name</Label>
+                        <div className="gap-4">
+                            <Label htmlFor="name" className="pb-4">
+                                Prescription Name
+                            </Label>
                             <Input
                                 id="name"
                                 placeholder="e.g. Blood pressure meds"
@@ -40,8 +42,10 @@ export default function PrescriptionCreate() {
                             {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
                         </div>
 
-                        <div className='gap-4'>
-                            <Label htmlFor="prescription_file" className="pb-4">Prescription File</Label>
+                        <div className="gap-4">
+                            <Label htmlFor="prescription_file" className="pb-4">
+                                Prescription File
+                            </Label>
                             <Input
                                 id="prescription_file"
                                 type="file"

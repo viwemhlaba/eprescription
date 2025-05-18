@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
 import { usePage } from '@inertiajs/react';
+import { useEffect } from 'react';
 import { toast, Toaster } from 'sonner';
 
 import { AppContent } from '@/components/app-content';
@@ -9,11 +9,15 @@ import { AppSidebarHeader } from '@/components/app-sidebar-header';
 import { type BreadcrumbItem } from '@/types';
 import { type PropsWithChildren } from 'react';
 
-export default function AppSidebarLayout({
-    children,
-    breadcrumbs = [],
-}: PropsWithChildren<{ breadcrumbs?: BreadcrumbItem[] }>) {
-    const { flash } = usePage().props as any;
+type FlashProps = {
+    flash?: {
+        success?: string;
+        error?: string;
+    };
+};
+
+export default function AppSidebarLayout({ children, breadcrumbs = [] }: PropsWithChildren<{ breadcrumbs?: BreadcrumbItem[] }>) {
+    const { flash } = usePage<FlashProps>().props;
 
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);

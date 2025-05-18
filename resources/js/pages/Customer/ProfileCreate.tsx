@@ -1,10 +1,10 @@
+import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useForm, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
-import Heading from '@/components/heading';
+import { useForm, usePage } from '@inertiajs/react';
 import { FormEvent } from 'react';
 
 export default function ProfileCreate() {
@@ -28,8 +28,15 @@ export default function ProfileCreate() {
     };
 
     const provinces = [
-        'Eastern Cape', 'Free State', 'Gauteng', 'KwaZulu-Natal',
-        'Limpopo', 'Mpumalanga', 'Northern Cape', 'North West', 'Western Cape',
+        'Eastern Cape',
+        'Free State',
+        'Gauteng',
+        'KwaZulu-Natal',
+        'Limpopo',
+        'Mpumalanga',
+        'Northern Cape',
+        'North West',
+        'Western Cape',
     ];
 
     const allergies = ['None', 'Peanuts', 'Shellfish', 'Dust', 'Pollen'];
@@ -54,7 +61,7 @@ export default function ProfileCreate() {
                     <div>
                         <Label htmlFor="id_number">ID Number</Label>
                         <Input id="id_number" value={data.id_number} onChange={(e) => setData('id_number', e.target.value)} />
-                        {errors.id_number && <p className="text-red-500 text-sm">{errors.id_number}</p>}
+                        {errors.id_number && <p className="text-sm text-red-500">{errors.id_number}</p>}
                     </div>
                     <div>
                         <Label htmlFor="cellphone_number">Cellphone Number</Label>
@@ -70,7 +77,9 @@ export default function ProfileCreate() {
                         </SelectTrigger>
                         <SelectContent>
                             {allergies.map((allergy) => (
-                                <SelectItem key={allergy} value={allergy}>{allergy}</SelectItem>
+                                <SelectItem key={allergy} value={allergy}>
+                                    {allergy}
+                                </SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
@@ -85,7 +94,9 @@ export default function ProfileCreate() {
                             </SelectTrigger>
                             <SelectContent>
                                 {provinces.map((province) => (
-                                    <SelectItem key={province} value={province}>{province}</SelectItem>
+                                    <SelectItem key={province} value={province}>
+                                        {province}
+                                    </SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
@@ -112,7 +123,9 @@ export default function ProfileCreate() {
                     <Input id="postal_code" value={data.postal_code} onChange={(e) => setData('postal_code', e.target.value)} />
                 </div>
 
-                <Button type="submit" disabled={processing}>Save Profile</Button>
+                <Button type="submit" disabled={processing}>
+                    Save Profile
+                </Button>
             </form>
         </AppLayout>
     );

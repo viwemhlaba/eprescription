@@ -9,9 +9,20 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-export default function PrescriptionIndex({ prescriptions }: { prescriptions: any[] }) {
+interface Prescription {
+    id: number;
+    name: string;
+    status: string;
+    created_at: string;
+    repeats_total: number;
+    repeats_used: number;
+    next_repeat_date: string | null;
+    file_path: string;
+}
+
+export default function PrescriptionIndex({ prescriptions }: { prescriptions: Prescription[] }) {
     const [editModalOpen, setEditModalOpen] = useState(false);
-    const [editingPrescription, setEditingPrescription] = useState<any | null>(null);
+    const [editingPrescription, setEditingPrescription] = useState<Prescription | null>(null);
     const [filter, setFilter] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
     const [dateFilter, setDateFilter] = useState('');
@@ -23,7 +34,7 @@ export default function PrescriptionIndex({ prescriptions }: { prescriptions: an
 
     const repeatForm = useForm({});
     const [historyModalOpen, setHistoryModalOpen] = useState(false);
-    const [historyPrescription, setHistoryPrescription] = useState<any | null>(null);
+    const [historyPrescription, setHistoryPrescription] = useState<Prescription | null>(null);
 
     const requestRepeat = (id: number) => {
         repeatForm.post(route('customer.prescriptions.request-repeat', id), {
@@ -50,7 +61,7 @@ export default function PrescriptionIndex({ prescriptions }: { prescriptions: an
         return next.toLocaleDateString();
     }
 
-    const openEditModal = (prescription: any) => {
+    const openEditModal = (prescription: Prescription) => {
         setEditingPrescription(prescription);
         setData({
             name: prescription.name,

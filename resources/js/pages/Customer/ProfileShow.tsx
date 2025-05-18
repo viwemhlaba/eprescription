@@ -1,14 +1,12 @@
+import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
-import Heading from '@/components/heading';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 
-
 export default function ProfileShow() {
-
     const { auth, customer } = usePage().props as any;
     const user = auth?.user || {};
 
@@ -103,8 +101,8 @@ export default function ProfileShow() {
                                 <Input id="state" value={data.state} disabled />
                             </div>
                         </div>
-                        
-                        <div className='grid gap-2'>
+
+                        <div className="grid gap-2">
                             <Label htmlFor="postal_code">Postal Code</Label>
                             <Input id="postal_code" value={data.postal_code} disabled />
                         </div>

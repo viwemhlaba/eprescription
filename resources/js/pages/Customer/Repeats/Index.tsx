@@ -1,13 +1,6 @@
-import AppLayout from '@/layouts/app-layout';
 import Heading from '@/components/heading';
-import {
-    Table,
-    TableHeader,
-    TableRow,
-    TableHead,
-    TableBody,
-    TableCell
-} from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import AppLayout from '@/layouts/app-layout';
 import { Head } from '@inertiajs/react';
 
 export default function RepeatIndex({ prescriptions }: { prescriptions: any[] }) {
@@ -23,10 +16,7 @@ export default function RepeatIndex({ prescriptions }: { prescriptions: any[] })
             <Head title="My Repeats" />
 
             <div className="p-4">
-                <Heading
-                    title="My Repeat Prescriptions"
-                    description="Track how many repeats you've used and when your next one is due."
-                />
+                <Heading title="My Repeat Prescriptions" description="Track how many repeats you've used and when your next one is due." />
 
                 {prescriptions.length === 0 ? (
                     <p className="text-muted-foreground mt-4">No repeat prescriptions found.</p>
@@ -45,8 +35,10 @@ export default function RepeatIndex({ prescriptions }: { prescriptions: any[] })
                                 {prescriptions.map((p) => (
                                     <TableRow key={p.id}>
                                         <TableCell>{p.name}</TableCell>
-                                        <TableCell>{p.repeats_used} / {p.repeats_total}</TableCell>
-                                        <TableCell className={isOverdue(p.next_repeat_date) ? 'text-red-600 font-medium' : ''}>
+                                        <TableCell>
+                                            {p.repeats_used} / {p.repeats_total}
+                                        </TableCell>
+                                        <TableCell className={isOverdue(p.next_repeat_date) ? 'font-medium text-red-600' : ''}>
                                             {p.next_repeat_date ?? 'N/A'}
                                             {isOverdue(p.next_repeat_date) && <span className="ml-2 text-xs">Overdue</span>}
                                         </TableCell>

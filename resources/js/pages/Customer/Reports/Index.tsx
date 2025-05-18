@@ -1,12 +1,29 @@
-import AppLayout from '@/layouts/app-layout';
 import Heading from '@/components/heading';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Input } from '@/components/ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import AppLayout from '@/layouts/app-layout';
+import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 
-export default function ReportsIndex({ prescriptions, filters }: any) {
+interface Prescription {
+    id: number;
+    name: string;
+    status: string;
+    created_at: string;
+}
+
+interface Filters {
+    from_date?: string;
+    to_date?: string;
+}
+
+interface ReportsIndexProps {
+    prescriptions: Prescription[];
+    filters: Filters;
+}
+
+export default function ReportsIndex({ prescriptions, filters }: ReportsIndexProps) {
     const [from, setFrom] = useState(filters.from_date || '');
     const [to, setTo] = useState(filters.to_date || '');
 
@@ -20,7 +37,7 @@ export default function ReportsIndex({ prescriptions, filters }: any) {
             <div className="p-4">
                 <Heading title="Reports" description="Generate reports of your dispensed prescriptions." />
 
-                <div className="flex items-end gap-4 mb-6">
+                <div className="mb-6 flex items-end gap-4">
                     <div>
                         <label className="block text-sm font-medium">From</label>
                         <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
@@ -31,11 +48,7 @@ export default function ReportsIndex({ prescriptions, filters }: any) {
                     </div>
                     <Button onClick={applyFilters}>Filter</Button>
 
-                    <a
-                        href={route('customer.reports.export', { from_date: from, to_date: to })}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                    >
+                    <a href={route('customer.reports.export', { from_date: from, to_date: to })} target="_blank" rel="noopener noreferrer">
                         <Button variant="outline">Export PDF</Button>
                     </a>
                 </div>
@@ -43,7 +56,7 @@ export default function ReportsIndex({ prescriptions, filters }: any) {
                 {prescriptions.length === 0 ? (
                     <p className="text-muted-foreground">No dispensed prescriptions found for this range.</p>
                 ) : (
-                    <div className="rounded-md border overflow-x-auto">
+                    <div className="overflow-x-auto rounded-md border">
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -53,7 +66,7 @@ export default function ReportsIndex({ prescriptions, filters }: any) {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {prescriptions.map((p: any) => (
+                                {prescriptions.map((p: Prescription) => (
                                     <TableRow key={p.id}>
                                         <TableCell>{p.name}</TableCell>
                                         <TableCell className="capitalize">{p.status}</TableCell>

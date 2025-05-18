@@ -1,19 +1,23 @@
-import AppLayout from '@/layouts/app-layout';
 import Heading from '@/components/heading';
-import { Head, useForm, usePage } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import AppLayout from '@/layouts/app-layout';
+import { Head, useForm } from '@inertiajs/react';
 import { FormEvent } from 'react';
 
-export default function OrderCreate({ prescriptions }: { prescriptions: any[] }) {
+type Prescription = {
+    id: number;
+    name: string;
+    created_at: string;
+};
+
+export default function OrderCreate({ prescriptions }: { prescriptions: Prescription[] }) {
     const { data, setData, post, processing, errors } = useForm({
         prescription_ids: [] as number[],
     });
 
     const handleCheckboxChange = (id: number) => {
-        setData('prescription_ids', (prev) =>
-            prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
-        );
+        setData('prescription_ids', (prev) => (prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]));
     };
 
     const handleSubmit = (e: FormEvent) => {
@@ -27,7 +31,7 @@ export default function OrderCreate({ prescriptions }: { prescriptions: any[] })
             <div className="p-4">
                 <Heading title="Create Order" description="Select prescriptions to be dispensed." />
 
-                <form onSubmit={handleSubmit} className="space-y-6 mt-4 max-w-xl">
+                <form onSubmit={handleSubmit} className="mt-4 max-w-xl space-y-6">
                     {prescriptions.length === 0 ? (
                         <p className="text-muted-foreground text-sm">No eligible prescriptions to order.</p>
                     ) : (
@@ -45,9 +49,7 @@ export default function OrderCreate({ prescriptions }: { prescriptions: any[] })
                         ))
                     )}
 
-                    {errors.prescription_ids && (
-                        <p className="text-sm text-red-500">{errors.prescription_ids}</p>
-                    )}
+                    {errors.prescription_ids && <p className="text-sm text-red-500">{errors.prescription_ids}</p>}
 
                     <Button type="submit" disabled={processing}>
                         Submit Order

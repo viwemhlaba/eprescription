@@ -5,7 +5,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link } from '@inertiajs/react';
 
-export default function OrdersIndex({ orders }: { orders: any[] }) {
+type Order = {
+    id: number;
+    order_date: string;
+    status: string;
+    total_amount_due: number;
+};
+
+export default function OrdersIndex({ orders }: { orders: Order[] }) {
     return (
         <AppLayout>
             <Head title="My Orders" />
