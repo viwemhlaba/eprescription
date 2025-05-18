@@ -30,4 +30,5 @@ class PrescriptionItem extends Model
     {
         return $this->belongsTo(Medication::class);
     }
+
 }
