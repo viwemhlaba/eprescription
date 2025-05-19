@@ -5,18 +5,14 @@ namespace Database\Factories;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use App\Models\Medication\DosageForm;
 
-/**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Medication\DosageForm>
- */
 class DosageFormFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
+    protected $model = DosageForm::class;
+
     public function definition(): array
     {
-        return ['name' => fake()->randomElement(['Tablet', 'Syrup', 'Capsule', 'Injection'])];
+        return [
+            'name' => $this->faker->randomElement(['Tablet', 'Capsule', 'Syrup', 'Injection']),
+        ];
     }
 }
