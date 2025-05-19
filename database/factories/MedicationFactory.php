@@ -10,6 +10,7 @@ use App\Models\Medication\Medication;
 class MedicationFactory extends Factory
 {
     protected $model = Medication::class;
+
     public function definition(): array
     {
         return [

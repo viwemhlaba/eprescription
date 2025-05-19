@@ -2,21 +2,31 @@
 
 namespace App\Models\Medication;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\Customer\PrescriptionItem;
+use Database\Factories\MedicationFactory;
 
 class Medication extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
+
     protected $table = 'medications';
+
     protected $fillable = [
         'name',
-        'dosage_form_id',
         'active_ingredient_id',
+        'dosage_form_id',
         'schedule',
         'current_sale_price',
     ];
+
+
+    protected static function newFactory()
+    {
+        return MedicationFactory::new();
+    }
 
     public function dosageForm()
     {
