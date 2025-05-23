@@ -3,7 +3,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types'; // Make sure this type is defined
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, ClipboardList, FileText, LayoutGrid, PackageSearch, Pill, Repeat, Settings, ShoppingCart, UserCheck, Users } from 'lucide-react';
+import { BookOpen, ClipboardList, FileText, Home, LayoutGrid, PackageSearch, Pill, Repeat, ShoppingCart, UserCheck, Users } from 'lucide-react';
 import AppLogo from './app-logo';
 
 interface NavItemComponentProps {
@@ -68,9 +68,31 @@ export function AppSidebar() {
     ];
 
     const pharmacistNav: NavItem[] = [
-        { title: 'Prescriptions', href: '/pharmacist/prescriptions', icon: FileText },
-        { title: 'Dispense Queue', href: '/pharmacist/dispense', icon: PackageSearch },
-        { title: 'Reports', href: '/pharmacist/reports', icon: FileText },
+        {
+            title: 'Dashboard',
+            href: '/pharmacist/dashboard',
+            icon: Home,
+        },
+        {
+            title: 'Profile',
+            href: '/pharmacist/profile',
+            icon: Users,
+        },
+        {
+            title: 'Prescriptions',
+            href: '/pharmacist/prescriptions', // This will be the "View Prescriptions" page
+            icon: FileText,
+        },
+        {
+            title: 'Dispense Queue',
+            href: '/pharmacist/dispense', // This will be the "Dispense Prescription" page
+            icon: PackageSearch,
+        },
+        {
+            title: 'Reports',
+            href: '/pharmacist/reports', // This will be the "Generate Dispensed Medication Report" page
+            icon: FileText,
+        },
     ];
 
     const managerNav: NavItem[] = [
@@ -91,7 +113,7 @@ export function AppSidebar() {
         },
         {
             title: 'People',
-            href: '/manager/people/pharmacists', // Direct link to pharmacists
+            href: '/manager/people/pharmacists',
             icon: Users,
         },
         {
@@ -102,17 +124,12 @@ export function AppSidebar() {
         {
             title: 'Orders',
             href: '/manager/orders',
-            icon: ShoppingCart, // Reusing for now
+            icon: ShoppingCart,
         },
         {
             title: 'Reports',
             href: '/manager/reports',
             icon: FileText,
-        },
-        {
-            title: 'Settings',
-            href: '/manager/settings',
-            icon: Settings,
         },
     ];
 

@@ -106,6 +106,39 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                 </form>
 
                 {status && <div className="mb-4 text-center text-sm font-medium text-green-600">{status}</div>}
+
+                <div className="border-muted mt-6 rounded-md border p-4 text-sm">
+                    <h3 className="mb-2 text-sm font-medium">Demo Accounts</h3>
+                    <div className="space-y-3">
+                        <div>
+                            <p className="font-medium">Manager</p>
+                            <p>
+                                Email: <code className="bg-muted rounded px-2 py-1">manager@example.com</code>
+                            </p>
+                            <p>
+                                Password: <code className="bg-muted rounded px-2 py-1">password</code>
+                            </p>
+                        </div>
+                        <div>
+                            <p className="font-medium">Pharmacist</p>
+                            <p>
+                                Email: <code className="bg-muted rounded px-2 py-1">pharmacist@example.com</code>
+                            </p>
+                            <p>
+                                Password: <code className="bg-muted rounded px-2 py-1">password</code>
+                            </p>
+                        </div>
+                        <div>
+                            <p className="font-medium">Customer</p>
+                            <p>
+                                Email: <code className="bg-muted rounded px-2 py-1">customer@example.com</code>
+                            </p>
+                            <p>
+                                Password: <code className="bg-muted rounded px-2 py-1">password</code>
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </AuthLayout>
     );
