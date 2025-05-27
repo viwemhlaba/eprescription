@@ -3,7 +3,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types'; // Make sure this type is defined
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, ClipboardList, FileText, Home, LayoutGrid, PackageSearch, Pill, Repeat, ShoppingCart, UserCheck, Users } from 'lucide-react';
+import { BookOpen, ClipboardList, FileText, LayoutGrid, PackageSearch, Pill, Repeat, ShoppingCart, UserCheck, Users } from 'lucide-react';
 import AppLogo from './app-logo';
 
 interface NavItemComponentProps {
@@ -68,11 +68,6 @@ export function AppSidebar() {
     ];
 
     const pharmacistNav: NavItem[] = [
-        {
-            title: 'Dashboard',
-            href: '/pharmacist/dashboard',
-            icon: Home,
-        },
         {
             title: 'Profile',
             href: '/pharmacist/profile',

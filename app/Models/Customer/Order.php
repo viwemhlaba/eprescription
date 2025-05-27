@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Customer;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Database\Factories\OrderFactory;
 
 class Order extends Model
 {
@@ -19,6 +20,11 @@ class Order extends Model
         'status',
         'total_amount_due',
     ];
+
+    public static function newFactory()
+    {
+        return OrderFactory::new();
+    }
 
     public function customer()
     {

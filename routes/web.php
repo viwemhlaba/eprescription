@@ -19,6 +19,7 @@ Route::middleware(['auth', 'role:manager'])->group(function () {
 });
 Route::middleware(['auth', 'role:pharmacist'])->group(function () {
     Route::get('/pharmacist/dashboard', fn () => Inertia::render('Pharmacist/Dashboard'));
+    Route::get('/prescriptions', fn () => Inertia::render('Pharmacist/ViewPrescriptions'))->name('prescriptions');
 });
 Route::middleware(['auth', 'role:customer'])->group(function () {
     Route::get('/customer/dashboard', fn () => Inertia::render('Customer/Dashboard'));
