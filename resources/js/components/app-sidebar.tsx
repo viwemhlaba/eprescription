@@ -80,7 +80,11 @@ export function AppSidebar() {
         },
         {
             title: 'Dispense Queue',
-            href: '/pharmacist/dispense', // This will be the "Dispense Prescription" page
+            href: '/pharmacist/repeats', // This will be the "Dispense Prescription" page
+            icon: PackageSearch,
+        },{
+            title: 'Stock',
+            href: '/pharmacist/stock', // This will be the "Dispense Prescription" page
             icon: PackageSearch,
         },
         {

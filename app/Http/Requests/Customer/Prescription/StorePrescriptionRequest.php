@@ -17,6 +17,7 @@ class StorePrescriptionRequest extends FormRequest
         return [
             'name' => 'required|string|max:255',
             'prescription_file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'delivery_method' => 'required|string|in:pickup,dispense',
         ];
     }
 }

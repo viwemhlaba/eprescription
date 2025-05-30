@@ -20,6 +20,7 @@ class Prescription extends Model
         'repeats_total',
         'repeats_used',
         'next_repeat_date',
+        'delivery_method',
     ];
 
     public function user()

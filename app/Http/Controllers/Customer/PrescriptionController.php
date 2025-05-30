@@ -52,6 +52,7 @@ class PrescriptionController extends Controller
             'name' => $request->name,
             'file_path' => $path,
             'status' => 'pending',
+            'delivery_method' => $request->delivery_method,
         ]);
 
         return redirect()->route('customer.prescriptions.index')->with('success', 'Prescription uploaded successfully.');

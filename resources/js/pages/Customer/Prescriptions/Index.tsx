@@ -18,6 +18,7 @@ interface Prescription {
     repeats_used: number;
     next_repeat_date: string | null;
     file_path: string;
+    delivery_method: string | null;
 }
 
 export default function PrescriptionIndex({ prescriptions }: { prescriptions: Prescription[] }) {
@@ -158,6 +159,7 @@ export default function PrescriptionIndex({ prescriptions }: { prescriptions: Pr
                                     <TableHead>Name</TableHead>
                                     <TableHead>Status</TableHead>
                                     <TableHead>Date Uploaded</TableHead>
+                                    <TableHead>Delivery Method</TableHead>
                                     <TableHead>Repeats</TableHead>
                                     <TableHead>Actions</TableHead>
                                 </TableRow>
@@ -168,6 +170,11 @@ export default function PrescriptionIndex({ prescriptions }: { prescriptions: Pr
                                         <TableCell>{p.name}</TableCell>
                                         <TableCell className="capitalize">{p.status}</TableCell>
                                         <TableCell>{new Date(p.created_at).toLocaleString()}</TableCell>
+                                        <TableCell className="capitalize">
+                                            {p.delivery_method === 'pickup' && 'Pick up'}
+                                            {p.delivery_method === 'dispense' && 'Dispense'}
+                                            {!p.delivery_method && 'Not specified'}
+                                        </TableCell>
 
                                         <TableCell className="space-y-1 text-sm">
                                             {p.repeats_total > 0 ? (

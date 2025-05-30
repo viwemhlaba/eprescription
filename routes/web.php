@@ -17,10 +17,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware(['auth', 'role:manager'])->group(function () {
     Route::get('/manager/dashboard', fn () => Inertia::render('Manager/Dashboard'));
 });
-Route::middleware(['auth', 'role:pharmacist'])->group(function () {
-    Route::get('/pharmacist/dashboard', fn () => Inertia::render('Pharmacist/Dashboard'));
-    Route::get('/prescriptions', fn () => Inertia::render('Pharmacist/ViewPrescriptions'))->name('prescriptions');
+
+
+Route::middleware(['auth', 'role:pharmacist'])->prefix('pharmacist')->name('pharmacist.')->group(function () {
+    Route::get('/dashboard', fn () => Inertia::render('Pharmacist/Dashboard'))->name('dashboard');
+    Route::get('/profile', fn () => Inertia::render('Pharmacist/Profile'))->name('profile');
+    Route::get('/prescriptions', fn () => Inertia::render('Pharmacist/Prescriptions'))->name('prescriptions');
+    Route::get('/repeats', fn () => Inertia::render('Pharmacist/Repeats'))->name('repeats');
+    Route::get('/stock', fn () => Inertia::render('Pharmacist/Stock'))->name('stock');
+    Route::get('/reports', fn () => Inertia::render('Pharmacist/Reports'))->name('reports');
 });
+
+
+
 Route::middleware(['auth', 'role:customer'])->group(function () {
     Route::get('/customer/dashboard', fn () => Inertia::render('Customer/Dashboard'));
     Route::post('/prescriptions/{prescription}/request-repeat', [PrescriptionController::class, 'requestRepeat'])
