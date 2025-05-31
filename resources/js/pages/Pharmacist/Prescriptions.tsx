@@ -1,68 +1,102 @@
-import AppLayout from '@/layouts/app-layout';
 import Heading from '@/components/heading';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Head, Link } from '@inertiajs/react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import AppLayout from '@/layouts/app-layout';
+import { Link } from '@inertiajs/react';
+import { useState } from 'react';
 
-export default function PharmacistPrescriptions({ prescriptions = [] }: { prescriptions?: any[] }) {
+interface Prescription {
+    id: number;
+    customer_name: string;
+    prescription_name: string;
+    upload_date: string;
+    status: string;
+    file_path: string;
+}
+
+export default function PharmacistPrescriptions({ prescriptions }: { prescriptions: Prescription[] }) {
+    const [search, setSearch] = useState('');
+
+    const filtered = prescriptions
+        ? prescriptions.filter((p) => p.id.toString().includes(search) || p.customer_name.toLowerCase().includes(search.toLowerCase()))
+        : [];
+
+    const getBadgeStyle = (status: string) => {
+        switch (status.toLowerCase()) {
+            case 'pending':
+                return 'bg-yellow-500 text-black';
+            case 'loaded':
+                return 'bg-blue-600 text-white';
+            case 'dispensed':
+                return 'bg-green-600 text-white';
+            default:
+                return 'bg-gray-500 text-white';
+        }
+    };
+
     return (
         <AppLayout>
-            <Head title="Prescriptions" />
+            <div className="p-6 text-white">
+                <Heading title="View Prescriptions" description="Pharmacist / View Prescriptions" />
 
-            <div className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                    <Heading
-                        title="Prescriptions"
-                        description="View all prescriptions submitted by customers for review and dispensing."
-                    />
+                <div className="mb-4 max-w-md">
+                    <Input placeholder="Search by ID or Customer Name..." value={search} onChange={(e) => setSearch(e.target.value)} />
                 </div>
 
-                {prescriptions.length === 0 ? (
-                    <p className="text-muted-foreground text-sm">No prescriptions found.</p>
-                ) : (
-                    <div className="overflow-x-auto rounded-lg border">
-                        <Table className="w-full">
-                            <TableHeader className="bg-gray-50 dark:bg-gray-900">
+                <div className="overflow-x-auto rounded-lg border border-white/20">
+                    <Table>
+                        <TableHeader className="bg-gray-800 text-white">
+                            <TableRow>
+                                <TableHead className="text-white">Prescription #</TableHead>
+                                <TableHead className="text-white">Customer</TableHead>
+                                <TableHead className="text-white">Prescription Name</TableHead>
+                                <TableHead className="text-white">Upload Date</TableHead>
+                                <TableHead className="text-white">Status</TableHead>
+                                <TableHead className="text-white">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {filtered.length === 0 ? (
                                 <TableRow>
-                                    <TableHead>Customer</TableHead>
-                                    <TableHead>Name</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead>Delivery Method</TableHead>
-                                    <TableHead>Uploaded</TableHead>
-                                    <TableHead>Actions</TableHead>
+                                    <TableCell colSpan={6} className="text-muted-foreground text-center">
+                                        No prescriptions found.
+                                    </TableCell>
                                 </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {prescriptions.map((prescription) => (
-                                    <TableRow key={prescription.id}>
-                                        <TableCell>{prescription.customer?.user?.name}</TableCell>
-                                        <TableCell>{prescription.name}</TableCell>
-                                        <TableCell className="capitalize">{prescription.status}</TableCell>
-                                        <TableCell className="capitalize">
-                                            {prescription.delivery_method === 'pickup' && 'Pick up'}
-                                            {prescription.delivery_method === 'dispense' && 'Dispense'}
-                                            {!prescription.delivery_method && 'Not specified'}
+                            ) : (
+                                filtered.map((p) => (
+                                    <TableRow key={p.id}>
+                                        <TableCell>{p.id}</TableCell>
+                                        <TableCell>{p.customer_name}</TableCell>
+                                        <TableCell>{p.prescription_name}</TableCell>
+                                        <TableCell>{p.upload_date}</TableCell>
+                                        <TableCell>
+                                            <Badge className={getBadgeStyle(p.status)}>{p.status}</Badge>
                                         </TableCell>
-                                        <TableCell>{new Date(prescription.created_at).toLocaleDateString()}</TableCell>
-                                        <TableCell className="flex items-center gap-2">
-                                            <a
-                                                href={`/storage/${prescription.file_path}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-sm text-blue-600 hover:underline"
-                                            >
-                                                View
+                                        <TableCell className="flex flex-wrap gap-2">
+                                            <a href={`/storage/${p.file_path}`} target="_blank" rel="noopener noreferrer">
+                                                <Button variant="outline" size="sm">
+                                                    Download
+                                                </Button>
                                             </a>
-                                            <Button size="sm" variant="secondary" asChild>
-                                                <Link href={route('pharmacist.prescriptions.show', prescription.id)}>Details</Link>
-                                            </Button>
+                                            <Link href={route('pharmacist.prescriptions.load', { id: p.id })}>
+                                                <Button variant="default" size="sm" className="bg-white text-black" disabled={p.status !== 'pending'}>
+                                                    Load Prescription
+                                                </Button>
+                                            </Link>
+                                            <Link as="button" method="delete" href={route('pharmacist.prescriptions.destroy', p.id)}>
+                                                <Button variant="destructive" size="sm">
+                                                    Delete
+                                                </Button>
+                                            </Link>
                                         </TableCell>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
-                )}
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
             </div>
         </AppLayout>
     );
