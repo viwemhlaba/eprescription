@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\Customer\PrescriptionController;
+use App\Http\Controllers\Pharmacist\PharmacistPrescriptionController;
 
 Route::get('/', function () {
     return Inertia::render('welcome');
@@ -22,11 +23,27 @@ Route::middleware(['auth', 'role:manager'])->group(function () {
 Route::middleware(['auth', 'role:pharmacist'])->prefix('pharmacist')->name('pharmacist.')->group(function () {
     Route::get('/dashboard', fn () => Inertia::render('Pharmacist/Dashboard'))->name('dashboard');
     Route::get('/profile', fn () => Inertia::render('Pharmacist/Profile'))->name('profile');
-    Route::get('/prescriptions', fn () => Inertia::render('Pharmacist/Prescriptions'))->name('prescriptions');
+
+    Route::get('/prescriptions', [PharmacistPrescriptionController::class, 'index'])->name('prescriptions.index');
+    Route::get('/prescriptions/load/{prescription}', [PharmacistPrescriptionController::class, 'load'])->name('prescriptions.load');
+    Route::get('/prescriptions/create/{prescription}', [PharmacistPrescriptionController::class, 'create'])->name('prescriptions.create');
+    Route::post('/prescriptions', [PharmacistPrescriptionController::class, 'store'])->name('prescriptions.store');
+    Route::delete('/prescriptions/{prescription}', [PharmacistPrescriptionController::class, 'destroy'])->name('prescriptions.destroy');
+
+    Route::post('/prescriptions/load/{id}', [PharmacistPrescriptionController::class, 'storeLoaded'])
+        ->name('pharmacist.prescriptions.load');
+
+    Route::post('/pharmacist/prescriptions/load/{prescription}', [PharmacistPrescriptionController::class, 'update'])
+        ->name('pharmacist.prescriptions.load');
+
+
+
     Route::get('/repeats', fn () => Inertia::render('Pharmacist/Repeats'))->name('repeats');
     Route::get('/stock', fn () => Inertia::render('Pharmacist/Stock'))->name('stock');
     Route::get('/reports', fn () => Inertia::render('Pharmacist/Reports'))->name('reports');
 });
+
+
 
 
 
