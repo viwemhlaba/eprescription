@@ -15,9 +15,6 @@ class PharmacistPrescriptionController extends Controller
     public function index()
     {
         $prescriptions = Prescription::with('user') // eager load customer
-//        ->when($request->has('status'), function ($query) use ($request) {
-//            $query->where('status', $request->status);
-//        })
             ->latest()
             ->get()
             ->map(function ($prescription) {
@@ -35,16 +32,6 @@ class PharmacistPrescriptionController extends Controller
             'prescriptions' => $prescriptions,
         ]);
     }
-
-
-//    public function load($id)
-//    {
-//        $prescription = Prescription::with('user', 'items.medication', 'doctor')->findOrFail($id);
-//
-//        return inertia('Pharmacist/Prescriptions/Load', [
-//            'prescription' => $prescription,
-//        ]);
-//    }
 
     public function load($id)
     {
@@ -133,28 +120,6 @@ class PharmacistPrescriptionController extends Controller
             ->with('success', 'Prescription created successfully.');
     }
 
-//    public function storeLoaded(Request $request, $id)
-//    {
-//        $validated = $request->validate([
-//            'patient_id_number' => 'required|string|max:255',
-//            'doctor_id' => 'required|exists:doctors,id',
-//            'items' => 'required|array|min:1',
-//            'items.*.medication_id' => 'required|exists:medications,id',
-//            'items.*.quantity' => 'required|integer|min:1',
-//            'items.*.instructions' => 'nullable|string|max:1000',
-//        ]);
-//
-//        $prescription = Prescription::findOrFail($id);
-//        //$prescription->patient_id = $validated['patient_id'];
-//        $prescription->patient_id_number = $validated['patient_id_number'];
-//
-//        $prescription->doctor_id = $validated['doctor_id'];
-//        $prescription->status = 'approved'; // or whatever status you use
-//        $prescription->save();
-//
-//        return redirect()->route('pharmacist.prescriptions.index')
-//            ->with('success', 'Prescription successfully loaded.');
-//    }
 
     public function storeLoaded(Request $request, $id)
     {
@@ -212,6 +177,16 @@ class PharmacistPrescriptionController extends Controller
             ->with('success', 'Prescription loaded successfully.');
     }
 
+    public function showPrescription(Prescription $prescription)
+    {
+        $prescription->load([
+            'user',
+            'doctor',
+            'items.medication',
+        ]);
 
-
+        return Inertia::render('Pharmacist/Prescriptions/Show', [
+            'prescription' => $prescription,
+        ]);
+    }
 }

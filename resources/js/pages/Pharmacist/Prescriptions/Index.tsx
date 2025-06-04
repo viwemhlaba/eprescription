@@ -157,6 +157,11 @@ export default function PrescriptionIndex({ prescriptions }: { prescriptions: Pr
                                                 Download
                                             </a>
 
+                                            <Link href={route('pharmacist.prescriptions.show', p.id)}>
+                                                View
+                                            </Link>
+
+
                                             <button
                                                 onClick={() => confirmDelete(p)}
                                                 className="text-sm text-red-600 hover:underline"

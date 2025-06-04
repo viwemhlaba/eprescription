@@ -30,18 +30,21 @@ Route::middleware(['auth', 'role:pharmacist'])->prefix('pharmacist')->name('phar
     Route::post('/prescriptions', [PharmacistPrescriptionController::class, 'store'])->name('prescriptions.store');
     Route::delete('/prescriptions/{prescription}', [PharmacistPrescriptionController::class, 'destroy'])->name('prescriptions.destroy');
 
+    // Use unique route names inside group
     Route::post('/prescriptions/load/{id}', [PharmacistPrescriptionController::class, 'storeLoaded'])
-        ->name('pharmacist.prescriptions.load');
+        ->name('prescriptions.storeLoaded');  // changed name to be unique
 
-    Route::post('/pharmacist/prescriptions/load/{prescription}', [PharmacistPrescriptionController::class, 'update'])
-        ->name('pharmacist.prescriptions.load');
+    Route::post('/prescriptions/load/{prescription}', [PharmacistPrescriptionController::class, 'update'])
+        ->name('prescriptions.update');  // changed name to be unique
 
-
+    Route::get('/prescriptions/{prescription}', [PharmacistPrescriptionController::class, 'showPrescription'])
+        ->name('prescriptions.show');  // also fixed URI to no duplicate prefix
 
     Route::get('/repeats', fn () => Inertia::render('Pharmacist/Repeats'))->name('repeats');
     Route::get('/stock', fn () => Inertia::render('Pharmacist/Stock'))->name('stock');
     Route::get('/reports', fn () => Inertia::render('Pharmacist/Reports'))->name('reports');
 });
+
 
 
 
