@@ -7,7 +7,7 @@ import AppLayout from '@/layouts/app-layout';
 import { Head, useForm } from '@inertiajs/react';
 import React, { useEffect, useState } from 'react';
 // Add these imports for Dialog components
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface Medication {
     id: number;
@@ -30,7 +30,8 @@ type FormDataType = {
 
 interface Props {
     prescriptionId?: number;
-    initialData?: { // Make initialData optional
+    initialData?: {
+        // Make initialData optional
         customer_name: string | null;
         prescription_name: string | null;
         delivery_method: string | null;
@@ -44,7 +45,14 @@ interface Props {
     customerAllergyIds: number[];
 }
 
-export default function PrescriptionCreate({ prescriptionId, initialData, doctors, medications, customerAllergyIds, existingPrescriptionItems }: Props) {
+export default function PrescriptionCreate({
+    prescriptionId,
+    initialData,
+    doctors,
+    medications,
+    customerAllergyIds,
+    existingPrescriptionItems,
+}: Props) {
     // Provide a default empty object if initialData is undefined
     const safeInitialData = {
         customer_name: initialData?.customer_name ?? '',
@@ -60,9 +68,10 @@ export default function PrescriptionCreate({ prescriptionId, initialData, doctor
         patient_id_number: safeInitialData.patient_id_number,
         doctor_id: safeInitialData.doctor_id,
         // Initialize items with existing items if available, otherwise an empty array or a single blank item
-        items: existingPrescriptionItems && existingPrescriptionItems.length > 0
-            ? existingPrescriptionItems
-            : [{ medication_id: null, quantity: 1, instructions: '' }],
+        items:
+            existingPrescriptionItems && existingPrescriptionItems.length > 0
+                ? existingPrescriptionItems
+                : [{ medication_id: null, quantity: 1, instructions: '' }],
         notes: '',
     });
 
@@ -207,7 +216,7 @@ export default function PrescriptionCreate({ prescriptionId, initialData, doctor
                             />
                             {errors.patient_id_number && <div className="mt-1 text-sm text-red-500">{errors.patient_id_number}</div>}
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 flex">
+                        <div className="flex grid grid-cols-1 md:grid-cols-2">
                             <div>
                                 <Label>Prescribing Doctor</Label>
                                 <Select value={data.doctor_id} onValueChange={(value) => setData('doctor_id', value)}>
@@ -339,24 +348,14 @@ export default function PrescriptionCreate({ prescriptionId, initialData, doctor
                         <form onSubmit={submitDoctor} className="space-y-4">
                             <div>
                                 <Label htmlFor="name">First Name</Label>
-                                <Input
-                                    id="name"
-                                    value={doctorData.name}
-                                    onChange={(e) => setDoctorData('name', e.target.value)}
-                                    required
-                                />
-                                {doctorErrors.name && <p className="text-red-500 text-sm">{doctorErrors.name}</p>}
+                                <Input id="name" value={doctorData.name} onChange={(e) => setDoctorData('name', e.target.value)} required />
+                                {doctorErrors.name && <p className="text-sm text-red-500">{doctorErrors.name}</p>}
                             </div>
 
                             <div>
                                 <Label htmlFor="surname">Surname</Label>
-                                <Input
-                                    id="surname"
-                                    value={doctorData.surname}
-                                    onChange={(e) => setDoctorData('surname', e.target.value)}
-                                    required
-                                />
-                                {doctorErrors.surname && <p className="text-red-500 text-sm">{doctorErrors.surname}</p>}
+                                <Input id="surname" value={doctorData.surname} onChange={(e) => setDoctorData('surname', e.target.value)} required />
+                                {doctorErrors.surname && <p className="text-sm text-red-500">{doctorErrors.surname}</p>}
                             </div>
 
                             <div>
@@ -368,7 +367,7 @@ export default function PrescriptionCreate({ prescriptionId, initialData, doctor
                                     onChange={(e) => setDoctorData('email', e.target.value)}
                                     required
                                 />
-                                {doctorErrors.email && <p className="text-red-500 text-sm">{doctorErrors.email}</p>}
+                                {doctorErrors.email && <p className="text-sm text-red-500">{doctorErrors.email}</p>}
                             </div>
 
                             <div>
@@ -380,7 +379,7 @@ export default function PrescriptionCreate({ prescriptionId, initialData, doctor
                                     onChange={(e) => setDoctorData('phone', e.target.value)}
                                     required
                                 />
-                                {doctorErrors.phone && <p className="text-red-500 text-sm">{doctorErrors.phone}</p>}
+                                {doctorErrors.phone && <p className="text-sm text-red-500">{doctorErrors.phone}</p>}
                             </div>
 
                             <div>
@@ -391,7 +390,7 @@ export default function PrescriptionCreate({ prescriptionId, initialData, doctor
                                     onChange={(e) => setDoctorData('practice_number', e.target.value)}
                                     required
                                 />
-                                {doctorErrors.practice_number && <p className="text-red-500 text-sm">{doctorErrors.practice_number}</p>}
+                                {doctorErrors.practice_number && <p className="text-sm text-red-500">{doctorErrors.practice_number}</p>}
                             </div>
 
                             <div className="flex justify-end space-x-2">

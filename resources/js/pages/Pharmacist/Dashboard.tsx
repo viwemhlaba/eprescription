@@ -1,16 +1,8 @@
-import React from 'react';
-import { Link, Head } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import AppLayout from '@/layouts/app-layout';
+import { Head, Link } from '@inertiajs/react';
 
 // Define the types for your incoming props
 interface MetricsData {
@@ -49,7 +41,7 @@ const PharmacistDashboard = ({ pharmacistName, metrics, recentActivities }: Phar
     return (
         <AppLayout>
             <Head title="Pharmacist Dashboard" />
-            <div className="mx-auto max-w-7xl py-6 px-4 sm:px-6 lg:px-8 space-y-8">
+            <div className="mx-auto max-w-7xl space-y-8 px-4 py-6 sm:px-6 lg:px-8">
                 {/* Welcome Section */}
                 <Card>
                     <CardHeader>
@@ -58,7 +50,7 @@ const PharmacistDashboard = ({ pharmacistName, metrics, recentActivities }: Phar
                 </Card>
 
                 {/* Key Metrics Section */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                     <Card>
                         <CardHeader className="pb-2">
                             <CardTitle className="text-lg font-medium">Prescriptions Loaded Today</CardTitle>
@@ -93,27 +85,15 @@ const PharmacistDashboard = ({ pharmacistName, metrics, recentActivities }: Phar
                         <CardTitle>Quick Actions</CardTitle>
                     </CardHeader>
                     <CardContent className="flex flex-wrap gap-4">
-                        <Button
-                            variant="default"
-                            className="bg-white text-black hover:bg-gray-200"
-                            asChild
-                        >
+                        <Button variant="default" className="bg-white text-black hover:bg-gray-200" asChild>
                             <Link href={route('pharmacist.prescriptions.index')}>View Prescriptions</Link>
                         </Button>
 
-                        <Button
-                            variant="default"
-                            className="bg-white text-black hover:bg-gray-200"
-                            asChild
-                        >
+                        <Button variant="default" className="bg-white text-black hover:bg-gray-200" asChild>
                             <Link href={route('pharmacist.prescriptions.index', { status: 'dispensed' })}>Dispense Prescription</Link>
                         </Button>
 
-                        <Button
-                            variant="default"
-                            className="bg-white text-black hover:bg-gray-200"
-                            asChild
-                        >
+                        <Button variant="default" className="bg-white text-black hover:bg-gray-200" asChild>
                             <Link href={route('pharmacist.prescriptions.index', { status: 'pending' })}>View Pending Prescriptions</Link>
                         </Button>
                     </CardContent>

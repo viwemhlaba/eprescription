@@ -1,9 +1,8 @@
-import React from 'react';
-import { Head } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Heading from '@/components/heading';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import AppLayout from '@/layouts/app-layout';
+import { Head } from '@inertiajs/react';
 
 interface Medication {
     id: number;
@@ -38,30 +37,21 @@ interface Props {
 }
 
 export default function Show({ prescription }: Props) {
-    const total = prescription.items.reduce(
-        (sum, item) => sum + item.medication.current_sale_price * item.quantity,
-        0
-    );
+    const total = prescription.items.reduce((sum, item) => sum + item.medication.current_sale_price * item.quantity, 0);
 
     return (
         <AppLayout>
             <Head title="View Prescription" />
-            <div className="max-w-4xl mx-auto p-6  rounded-lg shadow-lg text-gray-100">
-                <Heading
-                    title="Prescription Overview"
-                    description="Detailed view of prescription"
-                    className="mb-6"
-                />
+            <div className="mx-auto max-w-4xl rounded-lg p-6 text-gray-100 shadow-lg">
+                <Heading title="Prescription Overview" description="Detailed view of prescription" className="mb-6" />
 
                 <Card className="mb-6 border-gray-700">
                     <CardHeader>
                         <CardTitle>Patient & Prescription Info</CardTitle>
-                        <CardDescription>
-                            Overview of customer, doctor, delivery method, and upload date.
-                        </CardDescription>
+                        <CardDescription>Overview of customer, doctor, delivery method, and upload date.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                        <div className="grid grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
                             <div>
                                 <span className="font-semibold">Customer: </span>
                                 <span>{prescription.customer_name}</span>
@@ -93,9 +83,9 @@ export default function Show({ prescription }: Props) {
                                 <TableRow>
                                     <TableHead className="w-[40%]">Medication</TableHead>
                                     <TableHead className="w-[35%]">Instructions</TableHead>
-                                    <TableHead className="text-right w-[10%]">Quantity</TableHead>
-                                    <TableHead className="text-right w-[10%]">Unit Price (R)</TableHead>
-                                    <TableHead className="text-right w-[10%]">Total (R)</TableHead>
+                                    <TableHead className="w-[10%] text-right">Quantity</TableHead>
+                                    <TableHead className="w-[10%] text-right">Unit Price (R)</TableHead>
+                                    <TableHead className="w-[10%] text-right">Total (R)</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -104,9 +94,7 @@ export default function Show({ prescription }: Props) {
                                         <TableCell>{item.medication.name}</TableCell>
                                         <TableCell>{item.instructions || '-'}</TableCell>
                                         <TableCell className="text-right">{item.quantity}</TableCell>
-                                        <TableCell className="text-right">
-                                            {item.medication.current_sale_price.toFixed(2)}
-                                        </TableCell>
+                                        <TableCell className="text-right">{item.medication.current_sale_price.toFixed(2)}</TableCell>
                                         <TableCell className="text-right">
                                             {(item.quantity * item.medication.current_sale_price).toFixed(2)}
                                         </TableCell>
@@ -114,12 +102,12 @@ export default function Show({ prescription }: Props) {
                                 ))}
                             </TableBody>
                             <tfoot>
-                            <TableRow className="font-semibold border-t border-gray-700">
-                                <TableCell colSpan={4} className="text-right pr-4">
-                                    Total:
-                                </TableCell>
-                                <TableCell className="text-right">R{total.toFixed(2)}</TableCell>
-                            </TableRow>
+                                <TableRow className="border-t border-gray-700 font-semibold">
+                                    <TableCell colSpan={4} className="pr-4 text-right">
+                                        Total:
+                                    </TableCell>
+                                    <TableCell className="text-right">R{total.toFixed(2)}</TableCell>
+                                </TableRow>
                             </tfoot>
                         </Table>
                     </CardContent>

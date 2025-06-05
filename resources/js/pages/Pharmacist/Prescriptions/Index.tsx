@@ -2,14 +2,10 @@ import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { router } from '@inertiajs/react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
-import { Head, Link, useForm } from '@inertiajs/react';
-import { useState } from 'react';
-import { useEffect } from 'react';
-import { usePage } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 interface Prescription {
@@ -147,9 +143,7 @@ export default function PrescriptionIndex({ prescriptions }: { prescriptions: Pr
                                                         {p.repeats_used} of {p.repeats_total} used
                                                     </div>
 
-                                                    <div>
-                                                        Next: {p.next_repeat_date ?? 'N/A'}
-                                                    </div>
+                                                    <div>Next: {p.next_repeat_date ?? 'N/A'}</div>
                                                 </>
                                             ) : (
                                                 <span className="text-muted-foreground italic">No repeats</span>
@@ -180,15 +174,10 @@ export default function PrescriptionIndex({ prescriptions }: { prescriptions: Pr
                                                 View
                                             </Link>
 
-                                            <button
-                                                onClick={() => confirmDelete(p)}
-                                                className="text-sm text-red-600 hover:underline"
-                                            >
+                                            <button onClick={() => confirmDelete(p)} className="text-sm text-red-600 hover:underline">
                                                 Delete
                                             </button>
                                         </TableCell>
-
-
                                     </TableRow>
                                 ))}
                             </TableBody>

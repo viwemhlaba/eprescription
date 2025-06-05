@@ -1,10 +1,7 @@
-import React from 'react';
-import { Head, Link } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout'; // Assuming you use AppLayout for your main structure
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input'; // You'll likely need Input for a form
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import AppLayout from '@/layouts/app-layout'; // Assuming you use AppLayout for your main structure
+import { Head, Link } from '@inertiajs/react';
 
 // Define the type for the pharmacist data coming from props
 interface PharmacistData {
@@ -29,14 +26,16 @@ const EditProfile = ({ pharmacist }: EditProfileProps) => {
     return (
         <AppLayout>
             <Head title="Edit Pharmacist Profile" />
-            <div className="mx-auto max-w-4xl py-6 px-4 sm:px-6 lg:px-8 space-y-6">
+            <div className="mx-auto max-w-4xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
                 <Card>
                     <CardHeader>
                         <CardTitle>Edit Personal Details</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <p>This is the Edit Profile page. You will build your form here.</p>
-                        <p>Currently showing: {pharmacist.name} {pharmacist.surname}</p>
+                        <p>
+                            Currently showing: {pharmacist.name} {pharmacist.surname}
+                        </p>
                         {/* Example of how you might use input fields later */}
                         {/*
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
