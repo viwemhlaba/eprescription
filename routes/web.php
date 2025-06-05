@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\Customer\PrescriptionController;
 use App\Http\Controllers\Pharmacist\PharmacistPrescriptionController;
+use App\Http\Controllers\DoctorController;
 
 Route::get('/', function () {
     return Inertia::render('welcome');
@@ -15,15 +16,30 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('dashboard');
 });
 
+// routes/web.php
+
+
+
 Route::middleware(['auth', 'role:manager'])->group(function () {
     Route::get('/manager/dashboard', fn () => Inertia::render('Manager/Dashboard'));
 });
 
 
-Route::middleware(['auth', 'role:pharmacist'])->prefix('pharmacist')->name('pharmacist.')->group(function () {
-    Route::get('/dashboard', fn () => Inertia::render('Pharmacist/Dashboard'))->name('dashboard');
-    Route::get('/profile', fn () => Inertia::render('Pharmacist/Profile'))->name('profile');
 
+
+Route::middleware(['auth', 'role:pharmacist'])->prefix('pharmacist')->name('pharmacist.')->group(function () {
+    // Consolidated Dashboard Route
+    // Use the controller method for the dashboard to pass dynamic data
+    Route::get('/dashboard', [PharmacistPrescriptionController::class, 'dashboard'])->name('dashboard');
+
+    // Consolidated Profile Routes
+    // Use the controller methods for profile view and edit
+    Route::get('/profile', [PharmacistPrescriptionController::class, 'profile'])->name('profile');
+    Route::get('/profile/edit', [PharmacistPrescriptionController::class, 'editProfile'])->name('profile.edit');
+    Route::put('/profile', [PharmacistPrescriptionController::class, 'updateProfile'])->name('profile.update');
+
+
+    // Prescription Routes
     Route::get('/prescriptions', [PharmacistPrescriptionController::class, 'index'])->name('prescriptions.index');
     Route::get('/prescriptions/load/{prescription}', [PharmacistPrescriptionController::class, 'load'])->name('prescriptions.load');
     Route::get('/prescriptions/create/{prescription}', [PharmacistPrescriptionController::class, 'create'])->name('prescriptions.create');
@@ -32,23 +48,29 @@ Route::middleware(['auth', 'role:pharmacist'])->prefix('pharmacist')->name('phar
 
     // Use unique route names inside group
     Route::post('/prescriptions/load/{id}', [PharmacistPrescriptionController::class, 'storeLoaded'])
-        ->name('prescriptions.storeLoaded');  // changed name to be unique
+        ->name('prescriptions.storeLoaded');
 
-    Route::post('/prescriptions/load/{prescription}', [PharmacistPrescriptionController::class, 'update'])
-        ->name('prescriptions.update');  // changed name to be unique
+    Route::post('/prescriptions/update/{prescription}', [PharmacistPrescriptionController::class, 'update']) // Updated URI to avoid conflict and be more descriptive
+    ->name('prescriptions.update');
 
     Route::get('/prescriptions/{prescription}', [PharmacistPrescriptionController::class, 'showPrescription'])
-        ->name('prescriptions.show');  // also fixed URI to no duplicate prefix
+        ->name('prescriptions.show');
 
+    // If loadAction is different from the other load, keep it, otherwise consolidate
+    Route::post('/prescriptions/{prescription}/load-action', [PharmacistPrescriptionController::class, 'load'])
+        ->name('prescriptions.loadAction');
+
+    // Doctor Routes (if needed)
+    Route::post('/doctors', [DoctorController::class, 'store'])->name('doctors.store');
+
+    Route::get('/profile/edit', [PharmacistPrescriptionController::class, 'editProfile'])->name('profile.edit');
+    Route::put('/profile', [PharmacistPrescriptionController::class, 'updateProfile'])->name('profile.update');
+
+    // Other Pharmacist Routes
     Route::get('/repeats', fn () => Inertia::render('Pharmacist/Repeats'))->name('repeats');
     Route::get('/stock', fn () => Inertia::render('Pharmacist/Stock'))->name('stock');
     Route::get('/reports', fn () => Inertia::render('Pharmacist/Reports'))->name('reports');
 });
-
-
-
-
-
 
 Route::middleware(['auth', 'role:customer'])->group(function () {
     Route::get('/customer/dashboard', fn () => Inertia::render('Customer/Dashboard'));

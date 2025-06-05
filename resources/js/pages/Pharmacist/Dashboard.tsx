@@ -1,39 +1,169 @@
-import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
+import React from 'react';
+import { Link, Head } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Pharmacist Dashboard',
-        href: '/pharmacist/dashboard',
-    },
-];
+// Define the types for your incoming props
+interface MetricsData {
+    prescriptionsLoadedToday: number;
+    prescriptionsDispensedToday: number;
+    totalPrescriptionsPending: number;
+}
 
-export default function Dashboard() {
+interface Activity {
+    id: number;
+    activity: string;
+    prescription_name: string;
+    customer_name: string;
+    date: string;
+    time: string;
+}
+
+interface PharmacistDashboardProps {
+    pharmacistName: string;
+    metrics?: MetricsData;
+    recentActivities?: Activity[]; // Make recentActivities optional here
+}
+
+// Update the component to accept props
+const PharmacistDashboard = ({ pharmacistName, metrics, recentActivities }: PharmacistDashboardProps) => {
+    // Provide a safe default for metrics if it's undefined
+    const safeMetrics = metrics ?? {
+        prescriptionsLoadedToday: 0,
+        prescriptionsDispensedToday: 0,
+        totalPrescriptionsPending: 0,
+    };
+
+    // Provide a safe default for recentActivities if it's undefined
+    const safeRecentActivities = recentActivities ?? [];
+
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout>
             <Head title="Pharmacist Dashboard" />
-            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
-                <div className="border-sidebar-border/70 dark:border-sidebar-border relative min-h-[100vh] flex-1 overflow-hidden rounded-xl border md:min-h-min">
-                    <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
-                </div>
-                <div className="border-sidebar-border/70 dark:border-sidebar-border relative min-h-[100vh] flex-1 overflow-hidden rounded-xl border md:min-h-min">
-                    <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
+            <div className="mx-auto max-w-7xl py-6 px-4 sm:px-6 lg:px-8 space-y-8">
+                {/* Welcome Section */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-3xl font-bold">Welcome, {pharmacistName}</CardTitle>
+                    </CardHeader>
+                </Card>
+
+                {/* Key Metrics Section */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-lg font-medium">Prescriptions Loaded Today</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-4xl font-bold">{safeMetrics.prescriptionsLoadedToday}</p>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-lg font-medium">Prescriptions Dispensed Today</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-4xl font-bold">{safeMetrics.prescriptionsDispensedToday}</p>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-lg font-medium">Total Prescriptions Pending</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-4xl font-bold">{safeMetrics.totalPrescriptionsPending}</p>
+                        </CardContent>
+                    </Card>
                 </div>
 
-                <div className="grid auto-rows-min gap-4 sm:grid-cols-2">
-                    <div className="border-sidebar-border/70 dark:border-sidebar-border relative aspect-video overflow-hidden rounded-xl border">
-                        <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
-                    </div>
-                    <div className="border-sidebar-border/70 dark:border-sidebar-border relative aspect-video overflow-hidden rounded-xl border">
-                        <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
-                    </div>
-                    {/* <div className="border-sidebar-border/70 dark:border-sidebar-border relative aspect-video overflow-hidden rounded-xl border">
-                        <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
-                    </div> */}
-                </div>
+                {/* Quick Actions Section */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Quick Actions</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex flex-wrap gap-4">
+                        <Button
+                            variant="default"
+                            className="bg-white text-black hover:bg-gray-200"
+                            asChild
+                        >
+                            <Link href={route('pharmacist.prescriptions.index')}>View Prescriptions</Link>
+                        </Button>
+
+                        <Button
+                            variant="default"
+                            className="bg-white text-black hover:bg-gray-200"
+                            asChild
+                        >
+                            <Link href={route('pharmacist.prescriptions.index', { status: 'dispensed' })}>Dispense Prescription</Link>
+                        </Button>
+
+                        <Button
+                            variant="default"
+                            className="bg-white text-black hover:bg-gray-200"
+                            asChild
+                        >
+                            <Link href={route('pharmacist.prescriptions.index', { status: 'pending' })}>View Pending Prescriptions</Link>
+                        </Button>
+                    </CardContent>
+                </Card>
+
+                {/* Recent Activity Section */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Recent Activity</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {/* Use safeRecentActivities here */}
+                        {safeRecentActivities.length === 0 ? (
+                            <p className="text-muted-foreground text-sm">No recent activity.</p>
+                        ) : (
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Activity</TableHead>
+                                        <TableHead>Prescription Name</TableHead>
+                                        <TableHead>Customer</TableHead>
+                                        <TableHead>Date</TableHead>
+                                        <TableHead>Time</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {safeRecentActivities.map((activity) => (
+                                        <TableRow key={activity.id}>
+                                            <TableCell>{activity.activity}</TableCell>
+                                            <TableCell>
+                                                <Link
+                                                    href={route('pharmacist.prescriptions.show', activity.id)}
+                                                    className="text-blue-400 hover:underline"
+                                                >
+                                                    {activity.prescription_name}
+                                                </Link>
+                                            </TableCell>
+                                            <TableCell>{activity.customer_name}</TableCell>
+                                            <TableCell>{activity.date}</TableCell>
+                                            <TableCell>{activity.time}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        )}
+                    </CardContent>
+                </Card>
             </div>
         </AppLayout>
     );
-}
+};
+
+export default PharmacistDashboard;

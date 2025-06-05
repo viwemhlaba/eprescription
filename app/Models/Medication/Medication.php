@@ -42,4 +42,10 @@ class Medication extends Model
     {
         return $this->hasMany(PrescriptionItem::class);
     }
+
+    public function activeIngredients()
+    {
+        return $this->belongsToMany(ActiveIngredient::class);
+    }
+
 }

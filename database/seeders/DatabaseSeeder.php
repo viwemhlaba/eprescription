@@ -29,6 +29,11 @@ class DatabaseSeeder extends Seeder
             PrescriptionSeeder::class,
             PrescriptionItemSeeder::class,
             CustomerOrderSeeder::class,
+            AllergySeeder::class,
+            ActiveIngredientSeeder::class,
+            ActiveIngredientMedicationSeeder::class,
+            ActiveIngredientCustomerSeeder::class,
+            AllergyCustomerSeeder::class,
         ]);
     }
 }

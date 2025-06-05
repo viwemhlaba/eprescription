@@ -8,6 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { useState } from 'react';
+import { useEffect } from 'react';
+import { usePage } from '@inertiajs/react';
 import { toast } from 'sonner';
 
 interface Prescription {
@@ -31,6 +33,16 @@ export default function PrescriptionIndex({ prescriptions }: { prescriptions: Pr
     const [dateFilter, setDateFilter] = useState('');
 
     const { delete: destroy, processing } = useForm();
+    const { flash } = usePage().props as any;
+
+    useEffect(() => {
+        if (flash?.success) {
+            toast.success(flash.success);
+        }
+        if (flash?.error) {
+            toast.error(flash.error);
+        }
+    }, [flash]);
 
     const confirmDelete = (prescription: Prescription) => {
         setDeletingPrescription(prescription);
@@ -145,8 +157,12 @@ export default function PrescriptionIndex({ prescriptions }: { prescriptions: Pr
                                         </TableCell>
 
                                         <TableCell className="flex items-center gap-2">
-                                            <Link href={route('pharmacist.prescriptions.create', p.id)}>Load</Link>
-
+                                            <Link
+                                                href={route('pharmacist.prescriptions.load', p.id)}
+                                                className="text-sm text-blue-600 hover:underline"
+                                            >
+                                                {p.status === 'approved' ? 'Update' : 'Load'}
+                                            </Link>
 
                                             <a
                                                 href={`/storage/${p.file_path}`}
@@ -157,10 +173,12 @@ export default function PrescriptionIndex({ prescriptions }: { prescriptions: Pr
                                                 Download
                                             </a>
 
-                                            <Link href={route('pharmacist.prescriptions.show', p.id)}>
+                                            <Link
+                                                href={route('pharmacist.prescriptions.show', p.id)}
+                                                className="text-sm text-blue-600 hover:underline"
+                                            >
                                                 View
                                             </Link>
-
 
                                             <button
                                                 onClick={() => confirmDelete(p)}
@@ -169,6 +187,7 @@ export default function PrescriptionIndex({ prescriptions }: { prescriptions: Pr
                                                 Delete
                                             </button>
                                         </TableCell>
+
 
                                     </TableRow>
                                 ))}

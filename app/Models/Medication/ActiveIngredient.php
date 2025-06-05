@@ -25,4 +25,5 @@ class ActiveIngredient extends Model
     {
         return $this->hasMany(Medication::class);
     }
+
 }

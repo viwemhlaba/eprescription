@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
+use App\Models\Medication\ActiveIngredient;
 use Illuminate\Database\Eloquent\Model;
-//use App\Models\Customer\Order;
+use App\Models\Customer\Order;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Customer extends Model
@@ -29,6 +30,16 @@ class Customer extends Model
 
     public function orders()
     {
-        return $this->hasMany(\App\Models\Customer\Order::class);
+        return $this->hasMany(Order::class);
     }
+
+    // app/Models/Customer.php
+    public function allergies()
+    {
+        return $this->belongsToMany(Allergy::class, 'allergy_customer')
+            ->withTimestamps();
+    }
+
+
+
 }

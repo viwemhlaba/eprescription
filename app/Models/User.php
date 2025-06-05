@@ -3,12 +3,15 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Models\Allergy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use App\Models\Customer; // Ensure this path is correct or update it to the correct namespace
-use App\Models\Customer\Prescription;
+use App\Models\Customer;
 
+// Ensure this path is correct or update it to the correct namespace
+use App\Models\Customer\Prescription;
+use App\Models\Medication\ActiveIngredient;
 
 
 class User extends Authenticatable
@@ -20,26 +23,6 @@ class User extends Authenticatable
     const ROLE_CUSTOMER = 'customer';
     const ROLE_PHARMACIST = 'pharmacist';
     const ROLE_MANAGER = 'manager'; //THE PHARMACY MANAGER
-
-    public function isCustomer(): bool
-    {
-        return $this->role === self::ROLE_CUSTOMER;
-    }
-
-    public function isPharmacist(): bool
-    {
-        return $this->role === self::ROLE_PHARMACIST;
-    }
-
-    public function isManager(): bool
-    {
-        return $this->role === self::ROLE_MANAGER;
-    }
-
-    public function customer()
-{
-    return $this->hasOne(Customer::class);
-}
 
 
     /**
@@ -79,5 +62,35 @@ class User extends Authenticatable
     public function prescriptions()
     {
         return $this->hasMany(Prescription::class);
+    }
+
+    public function isCustomer(): bool
+    {
+        return $this->role === self::ROLE_CUSTOMER;
+    }
+
+    public function isPharmacist(): bool
+    {
+        return $this->role === self::ROLE_PHARMACIST;
+    }
+
+    public function isManager(): bool
+    {
+        return $this->role === self::ROLE_MANAGER;
+    }
+
+    public function customer()
+    {
+        return $this->hasOne(Customer::class);
+    }
+
+    public function allergies()
+    {
+        return $this->belongsToMany(Allergy::class);
+    }
+
+    public function activeIngredients()
+    {
+        return $this->belongsToMany(ActiveIngredient::class);
     }
 }
