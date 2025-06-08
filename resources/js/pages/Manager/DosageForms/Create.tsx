@@ -7,6 +7,7 @@ import AppLayout from '@/layouts/app-layout';
 import { Head, useForm } from '@inertiajs/react';
 import React, { useEffect } from 'react';
 import { toast } from 'sonner';
+import { route } from 'ziggy-js';
 
 export default function DosageFormCreate() {
     const { data, setData, post, processing, recentlySuccessful, errors } = useForm({

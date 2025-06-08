@@ -6,13 +6,12 @@ Your pharmacist account has been successfully created.
 Here are your login details:
 
 **Email:** {{ $email }}
-**Temporary Password:** {{ $password }}
 
-Please log in using the button below and remember to change your password immediately for security reasons.
-
-<x-mail::button :url="$loginUrl">
-Login to Your Account
+<x-mail::button :url="$resetUrl">
+Set Your Password
 </x-mail::button>
+
+For your security, please use the button above to set your password. This link will expire soon. Do not share this email or link with anyone.
 
 If you have any questions, feel free to contact us.
 

@@ -25,9 +25,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 
 
-Route::middleware(['auth', 'role:manager'])->group(function () {
-    Route::get('/manager/dashboard', fn () => Inertia::render('Manager/Dashboard'));
-});
+
 
 
 

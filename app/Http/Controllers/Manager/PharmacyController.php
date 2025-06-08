@@ -10,6 +10,7 @@ use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth; // To get the logged-in manager
 use Illuminate\Support\Facades\Mail; // Import the Mail facade
 use App\Mail\ResponsiblePharmacistAssigned; // Import your Mailable class
+use Illuminate\Validation\Rule; // Import Rule for validation
 
 class PharmacyController extends Controller
 {

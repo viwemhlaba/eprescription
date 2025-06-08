@@ -8,6 +8,7 @@ import AppLayout from '@/layouts/app-layout';
 import { Head, useForm } from '@inertiajs/react';
 import React, { useEffect } from 'react';
 import { toast } from 'sonner';
+import { route } from 'ziggy-js';
 
 // Define interfaces for the data structure passed from Laravel
 interface Pharmacist {

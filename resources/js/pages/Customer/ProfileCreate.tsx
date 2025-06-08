@@ -84,7 +84,8 @@ export default function ProfileCreate() {
     ];
 
     // The 'None' option can be added manually or managed on the backend
-    const allergyOptions = [{ id: 0, name: 'None' }, ...activeIngredients];
+    // Use id: null for 'None' to avoid invalid foreign key (0 is not a valid id in DB)
+    const allergyOptions = [{ id: null, name: 'None' }, ...activeIngredients];
 
     return (
         <AppLayout>

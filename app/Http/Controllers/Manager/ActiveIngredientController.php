@@ -15,7 +15,7 @@ class ActiveIngredientController extends Controller
      */
     public function index()
     {
-        $activeIngredients = ActiveIngredient::all(); // Fetch all active ingredients
+        $activeIngredients = ActiveIngredient::paginate(10); // Paginate with 10 items per page
 
         return Inertia::render('Manager/ActiveIngredients/Index', [
             'activeIngredients' => $activeIngredients,

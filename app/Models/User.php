@@ -12,6 +12,7 @@ use App\Models\CustomerAllergy; // <--- ADD THIS LINE
 use Illuminate\Database\Eloquent\Relations\HasMany; // Assuming a user can be a responsible pharmacist for many pharmacies
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use App\Models\Pharmacist; // <-- ADD THIS LINE
 
 
 class User extends Authenticatable

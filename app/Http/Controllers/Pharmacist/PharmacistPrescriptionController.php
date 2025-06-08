@@ -168,10 +168,10 @@ class PharmacistPrescriptionController extends Controller
         $validated = $request->validate([
             'patient_id_number' => 'required|string|max:255',
             'doctor_id' => 'required|exists:doctors,id',
+            'repeats_total' => 'required|integer|min:0', // Ensure repeats_total is always defined and validated
             'items' => 'required|array',
             'items.*.medication_id' => 'required|exists:medications,id',
             'items.*.quantity' => 'required|integer|min:1',
-            'items.*.instructions' => 'nullable|string',
             'items.*.instructions' => 'nullable|string',
         ]);
 

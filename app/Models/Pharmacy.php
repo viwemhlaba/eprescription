@@ -26,7 +26,8 @@ class Pharmacy extends Model
      */
     public function responsiblePharmacist(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'responsible_pharmacist_id');
+        return $this->belongsTo(User::class, 'responsible_pharmacist_id')
+            ->where('role', User::ROLE_PHARMACIST);
     }
 
     /**

@@ -15,7 +15,7 @@ class DosageFormController extends Controller
      */
     public function index()
     {
-        $dosageForms = DosageForm::all(); // Fetch all dosage forms
+        $dosageForms = DosageForm::paginate(10); // Paginate with 10 items per page
 
         return Inertia::render('Manager/DosageForms/Index', [
             'dosageForms' => $dosageForms,

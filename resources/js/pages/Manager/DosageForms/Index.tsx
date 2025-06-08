@@ -8,7 +8,17 @@ import { Pencil, Trash2 } from 'lucide-react'; // Icons for edit/delete
 import { useEffect } from 'react';
 import { toast } from 'sonner';
 
-// Define interface for DosageForm data
+// Update the interface to match Laravel's paginator
+interface Paginated<T> {
+    data: T[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    next_page_url: string | null;
+    prev_page_url: string | null;
+}
+
 interface DosageForm {
     id: number;
     name: string;
@@ -18,7 +28,7 @@ interface DosageForm {
 }
 
 interface DosageFormIndexProps {
-    dosageForms: DosageForm[];
+    dosageForms: Paginated<DosageForm>;
 }
 
 export default function DosageFormIndex({ dosageForms }: DosageFormIndexProps) {
@@ -46,6 +56,13 @@ export default function DosageFormIndex({ dosageForms }: DosageFormIndexProps) {
         }
     };
 
+    // Pagination navigation handler
+    const goToPage = (url: string | null) => {
+        if (url) {
+            window.location.href = url;
+        }
+    };
+
     return (
         <AppLayout>
             <Head title="Dosage Forms" />
@@ -57,7 +74,7 @@ export default function DosageFormIndex({ dosageForms }: DosageFormIndexProps) {
                     </Link>
                 </div>
 
-                {dosageForms.length > 0 ? (
+                {dosageForms.data.length > 0 ? (
                     <Card>
                         <CardHeader>
                             <CardTitle>Dosage Form List</CardTitle>
@@ -74,7 +91,7 @@ export default function DosageFormIndex({ dosageForms }: DosageFormIndexProps) {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {dosageForms.map((form) => (
+                                    {dosageForms.data.map((form) => (
                                         <TableRow key={form.id}>
                                             <TableCell className="font-medium">{form.id}</TableCell>
                                             <TableCell>{form.name}</TableCell>
@@ -95,6 +112,28 @@ export default function DosageFormIndex({ dosageForms }: DosageFormIndexProps) {
                                     ))}
                                 </TableBody>
                             </Table>
+                            {/* Pagination Controls */}
+                            <div className="mt-4 flex items-center justify-between">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={!dosageForms.prev_page_url}
+                                    onClick={() => goToPage(dosageForms.prev_page_url)}
+                                >
+                                    Previous
+                                </Button>
+                                <span>
+                                    Page {dosageForms.current_page} of {dosageForms.last_page}
+                                </span>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={!dosageForms.next_page_url}
+                                    onClick={() => goToPage(dosageForms.next_page_url)}
+                                >
+                                    Next
+                                </Button>
+                            </div>
                         </CardContent>
                     </Card>
                 ) : (

@@ -8,7 +8,17 @@ import { Pencil, Trash2 } from 'lucide-react'; // Icons for edit/delete
 import { useEffect } from 'react';
 import { toast } from 'sonner';
 
-// Define interface for ActiveIngredient data
+// Update the interface to match Laravel's paginator
+interface Paginated<T> {
+    data: T[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    next_page_url: string | null;
+    prev_page_url: string | null;
+}
+
 interface ActiveIngredient {
     id: number;
     name: string;
@@ -18,7 +28,7 @@ interface ActiveIngredient {
 }
 
 interface ActiveIngredientIndexProps {
-    activeIngredients: ActiveIngredient[];
+    activeIngredients: Paginated<ActiveIngredient>;
 }
 
 export default function ActiveIngredientIndex({ activeIngredients }: ActiveIngredientIndexProps) {
@@ -47,6 +57,13 @@ export default function ActiveIngredientIndex({ activeIngredients }: ActiveIngre
         }
     };
 
+    // Pagination navigation handler
+    const goToPage = (url: string | null) => {
+        if (url) {
+            window.location.href = url;
+        }
+    };
+
     return (
         <AppLayout>
             <Head title="Active Ingredients" />
@@ -58,7 +75,7 @@ export default function ActiveIngredientIndex({ activeIngredients }: ActiveIngre
                     </Link>
                 </div>
 
-                {activeIngredients.length > 0 ? (
+                {activeIngredients.data.length > 0 ? (
                     <Card>
                         <CardHeader>
                             <CardTitle>Active Ingredient List</CardTitle>
@@ -75,7 +92,7 @@ export default function ActiveIngredientIndex({ activeIngredients }: ActiveIngre
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {activeIngredients.map((ingredient) => (
+                                    {activeIngredients.data.map((ingredient) => (
                                         <TableRow key={ingredient.id}>
                                             <TableCell className="font-medium">{ingredient.id}</TableCell>
                                             <TableCell>{ingredient.name}</TableCell>
@@ -101,6 +118,28 @@ export default function ActiveIngredientIndex({ activeIngredients }: ActiveIngre
                                     ))}
                                 </TableBody>
                             </Table>
+                            {/* Pagination Controls */}
+                            <div className="mt-4 flex items-center justify-between">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={!activeIngredients.prev_page_url}
+                                    onClick={() => goToPage(activeIngredients.prev_page_url)}
+                                >
+                                    Previous
+                                </Button>
+                                <span>
+                                    Page {activeIngredients.current_page} of {activeIngredients.last_page}
+                                </span>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={!activeIngredients.next_page_url}
+                                    onClick={() => goToPage(activeIngredients.next_page_url)}
+                                >
+                                    Next
+                                </Button>
+                            </div>
                         </CardContent>
                     </Card>
                 ) : (

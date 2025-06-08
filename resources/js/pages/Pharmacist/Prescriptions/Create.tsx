@@ -57,7 +57,6 @@ export default function PrescriptionCreate({ prescriptionId, initialData, doctor
         return acc + item.quantity * med.current_sale_price;
     }, 0);
 
-
     // Initialize items with one empty row for user convenience
     useEffect(() => {
         if (data.items.length === 0) {
@@ -93,11 +92,15 @@ export default function PrescriptionCreate({ prescriptionId, initialData, doctor
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!prescriptionId) return;
-        post(route('pharmacist.prescriptions.load', prescriptionId), {
-            //send email
-            onSuccess: () => reset(),
-        });
+        if (prescriptionId) {
+            post(route('pharmacist.prescriptions.load', prescriptionId), {
+                onSuccess: () => reset(),
+            });
+        } else {
+            post(route('pharmacist.prescriptions.create'), {
+                onSuccess: () => reset(),
+            });
+        }
     };
 
     return (
@@ -193,12 +196,9 @@ export default function PrescriptionCreate({ prescriptionId, initialData, doctor
                                         </SelectTrigger>
 
                                         {item.medication_id && (
-                                            <div className="text-sm text-muted-foreground mt-1">
-                                                {
-                                                    medications.find((m) => m.id === item.medication_id)?.name
-                                                } — R{
-                                                medications.find((m) => m.id === item.medication_id)?.current_sale_price.toFixed(2)
-                                            }
+                                            <div className="text-muted-foreground mt-1 text-sm">
+                                                {medications.find((m) => m.id === item.medication_id)?.name} — R
+                                                {medications.find((m) => m.id === item.medication_id)?.current_sale_price.toFixed(2)}
                                             </div>
                                         )}
 
@@ -251,10 +251,7 @@ export default function PrescriptionCreate({ prescriptionId, initialData, doctor
                     </div>
 
                     {/* Total Prescription Cost Summary */}
-                    <div className="mt-6 text-right text-lg font-semibold">
-                        Total Prescription Cost: R{totalPrescriptionCost.toFixed(2)}
-                    </div>
-
+                    <div className="mt-6 text-right text-lg font-semibold">Total Prescription Cost: R{totalPrescriptionCost.toFixed(2)}</div>
 
                     <div className="mt-8 flex justify-end">
                         <Button type="submit" disabled={processing}>

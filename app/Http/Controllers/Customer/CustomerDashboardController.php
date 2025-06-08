@@ -43,9 +43,6 @@ class CustomerDashboardController extends Controller
     {
         $user = auth()->user(); // Get the currently authenticated user
 
-        // ADD THIS LINE TEMPORARILY:
-        //dd($user ? $user->id : 'No user logged in'); // This will stop execution and show the user's ID
-
         $pendingPrescriptionsCount = 0;
         $availableRepeatsCount = 0;
 
