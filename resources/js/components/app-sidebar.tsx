@@ -1,19 +1,30 @@
 import { NavFooter } from '@/components/nav-footer';
 import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
-import { type NavItem } from '@/types'; // Make sure this type is defined
+import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, ClipboardList, FileText, LayoutGrid, PackageSearch, Pill, Repeat, ShoppingCart, UserCheck, Users } from 'lucide-react';
+import {
+    BookOpen,
+    ClipboardList,
+    FileText,
+    FlaskConical,
+    LayoutGrid,
+    PackageSearch,
+    Pill,
+    Repeat,
+    ShoppingCart,
+    Syringe,
+    UserCheck,
+    Users,
+} from 'lucide-react';
 import AppLogo from './app-logo';
 
 interface NavItemComponentProps {
-    // Define props for NavItemComponent
     item: NavItem;
 }
 
 function NavItemComponent({ item }: NavItemComponentProps) {
     if (item.items && item.items.length > 0 && !item.href) {
-        // Render a heading for parent items with children
         return (
             <div className="pt-2 pb-1">
                 <span className="text-muted-foreground text-xs font-semibold uppercase">{item.title}</span>
@@ -21,7 +32,6 @@ function NavItemComponent({ item }: NavItemComponentProps) {
         );
     }
 
-    // Render a regular link item
     return (
         <Link
             href={item.href!}
@@ -36,15 +46,12 @@ function NavItemComponent({ item }: NavItemComponentProps) {
 export function AppSidebar() {
     interface AuthUser {
         role: string;
-        // Add other user properties if needed
     }
 
     interface PageProps {
         auth?: {
             user?: AuthUser;
-            // Add other auth properties if needed
         };
-        // Add other page props if needed
     }
 
     const { auth } = usePage<PageProps>().props;
@@ -63,7 +70,7 @@ export function AppSidebar() {
         { title: 'Prescriptions', href: '/customer/prescriptions', icon: FileText },
         { title: 'Repeats', href: '/customer/repeats', icon: Repeat },
         { title: 'Orders', href: '/customer/orders', icon: PackageSearch },
-        { title: 'Stock', href: '/customer/stock', icon: PackageSearch }, // Potentially not needed for customer, but kept as per previous
+        { title: 'Stock', href: '/customer/stock', icon: PackageSearch },
         { title: 'Reports', href: '/customer/reports', icon: FileText },
     ];
 
@@ -75,35 +82,50 @@ export function AppSidebar() {
         },
         {
             title: 'Prescriptions',
-            href: '/pharmacist/prescriptions', // This will be the "View Prescriptions" page
+            href: '/pharmacist/prescriptions',
             icon: FileText,
         },
         {
             title: 'Dispense Queue',
-            href: '/pharmacist/repeats', // This will be the "Dispense Prescription" page
+            href: '/pharmacist/repeats',
             icon: PackageSearch,
         },
         {
             title: 'Stock',
-            href: '/pharmacist/stock', // This will be the "Dispense Prescription" page
+            href: '/pharmacist/stock',
             icon: PackageSearch,
         },
         {
             title: 'Reports',
-            href: '/pharmacist/reports', // This will be the "Generate Dispensed Medication Report" page
+            href: '/pharmacist/reports',
             icon: FileText,
         },
     ];
 
     const managerNav: NavItem[] = [
         {
-            title: 'Pharmacy',
-            href: '/manager/pharmacy/details', // Direct link to details
+            title: 'Pharmacies', // Changed title to plural for clarity
+            href: route('manager.pharmacies.index'), // Points to the new index page
             icon: ClipboardList,
         },
         {
+            title: 'Active Ingredients', // NEW: Add this item
+            href: route('manager.activeIngredients.index'), // NEW: Link to the index page
+            icon: FlaskConical, // NEW: Use FlaskConical icon, or choose another that fits
+        },
+        {
+            title: 'Dosage Forms', // NEW: Add this item
+            href: route('manager.dosageForms.index'), // NEW: Link to the index page
+            icon: Syringe, // NEW: Using Syringe icon, or choose another
+        },
+        {
+            title: 'Pharmacists', // New or updated link
+            href: route('manager.pharmacists.index'),
+            icon: Users, // Using Users icon
+        },
+        {
             title: 'Catalogue',
-            href: '/manager/catalogue/medications', // Direct link to medications
+            href: '/manager/catalogue/medications',
             icon: Pill,
         },
         {
@@ -168,22 +190,6 @@ export function AppSidebar() {
                     {mainNavItems.map((item) => (
                         <NavItemComponent key={item.href || item.title} item={item} />
                     ))}
-                    {/* Render headings for the former parent menu items */}
-                    {managerNav.find((item) => item.title === 'Pharmacy')?.items && (
-                        <div className="pt-2 pb-1">
-                            <span className="text-muted-foreground text-xs font-semibold uppercase">Pharmacy</span>
-                        </div>
-                    )}
-                    {managerNav.find((item) => item.title === 'Catalogue')?.items && (
-                        <div className="pt-2 pb-1">
-                            <span className="text-muted-foreground text-xs font-semibold uppercase">Catalogue</span>
-                        </div>
-                    )}
-                    {managerNav.find((item) => item.title === 'People')?.items && (
-                        <div className="pt-2 pb-1">
-                            <span className="text-muted-foreground text-xs font-semibold uppercase">People</span>
-                        </div>
-                    )}
                 </div>
             </SidebarContent>
 

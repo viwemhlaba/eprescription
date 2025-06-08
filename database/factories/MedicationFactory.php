@@ -15,6 +15,7 @@ class MedicationFactory extends Factory
     {
         return [
             'name' => fake()->unique()->word(),
+            'active_ingredient_id' => ActiveIngredient::factory(),
             'dosage_form_id' => DosageForm::factory(),
             'schedule' => 'Schedule ' . fake()->numberBetween(0, 6),
             'current_sale_price' => fake()->randomFloat(2, 20, 200),

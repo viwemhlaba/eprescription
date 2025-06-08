@@ -5,6 +5,11 @@ use Inertia\Inertia;
 use App\Http\Controllers\Customer\PrescriptionController;
 use App\Http\Controllers\Pharmacist\PharmacistPrescriptionController;
 use App\Http\Controllers\DoctorController;
+use App\Http\Controllers\Manager\ActiveIngredientController; // Add this line
+use App\Http\Controllers\Manager\DosageFormController; // Add this line
+use App\Http\Controllers\Customer\CustomerDashboardController;
+use App\Http\Controllers\Manager\PharmacyController;
+use App\Http\Controllers\Manager\PharmacistController;
 
 Route::get('/', function () {
     return Inertia::render('welcome');
@@ -29,11 +34,9 @@ Route::middleware(['auth', 'role:manager'])->group(function () {
 
 Route::middleware(['auth', 'role:pharmacist'])->prefix('pharmacist')->name('pharmacist.')->group(function () {
     // Consolidated Dashboard Route
-    // Use the controller method for the dashboard to pass dynamic data
     Route::get('/dashboard', [PharmacistPrescriptionController::class, 'dashboard'])->name('dashboard');
 
     // Consolidated Profile Routes
-    // Use the controller methods for profile view and edit
     Route::get('/profile', [PharmacistPrescriptionController::class, 'profile'])->name('profile');
     Route::get('/profile/edit', [PharmacistPrescriptionController::class, 'editProfile'])->name('profile.edit');
     Route::put('/profile', [PharmacistPrescriptionController::class, 'updateProfile'])->name('profile.update');
@@ -46,25 +49,26 @@ Route::middleware(['auth', 'role:pharmacist'])->prefix('pharmacist')->name('phar
     Route::post('/prescriptions', [PharmacistPrescriptionController::class, 'store'])->name('prescriptions.store');
     Route::delete('/prescriptions/{prescription}', [PharmacistPrescriptionController::class, 'destroy'])->name('prescriptions.destroy');
 
-    // Use unique route names inside group
-    Route::post('/prescriptions/load/{id}', [PharmacistPrescriptionController::class, 'storeLoaded'])
-        ->name('prescriptions.storeLoaded');
+    // **CHANGE 1: This route was causing the 405 error.**
+    // **Change method from POST to PUT and point to 'storeLoaded'.**
+    Route::put('/prescriptions/{prescription}/load-action', [PharmacistPrescriptionController::class, 'storeLoaded'])
+        ->name('prescriptions.loadAction'); // Frontend sends PUT to this URL
 
-    Route::post('/prescriptions/update/{prescription}', [PharmacistPrescriptionController::class, 'update']) // Updated URI to avoid conflict and be more descriptive
-    ->name('prescriptions.update');
+    // **Note:** The route below is likely redundant or conflicting with the above 'loadAction' if both are for the same "approve/load" functionality.
+    // If 'prescriptions.storeLoaded' is not used elsewhere for a distinct purpose, you might consider removing it.
+    // I'm commenting it out for now to ensure no conflicts with the 'loadAction' fix.
+    // Route::post('/prescriptions/load/{id}', [PharmacistPrescriptionController::class, 'storeLoaded'])
+    //     ->name('prescriptions.storeLoaded');
+
+    // This 'update' route seems separate from the 'load-action' for now, so keeping it as is.
+    Route::post('/prescriptions/update/{prescription}', [PharmacistPrescriptionController::class, 'update'])
+        ->name('prescriptions.update');
 
     Route::get('/prescriptions/{prescription}', [PharmacistPrescriptionController::class, 'showPrescription'])
         ->name('prescriptions.show');
 
-    // If loadAction is different from the other load, keep it, otherwise consolidate
-    Route::post('/prescriptions/{prescription}/load-action', [PharmacistPrescriptionController::class, 'load'])
-        ->name('prescriptions.loadAction');
-
     // Doctor Routes (if needed)
     Route::post('/doctors', [DoctorController::class, 'store'])->name('doctors.store');
-
-    Route::get('/profile/edit', [PharmacistPrescriptionController::class, 'editProfile'])->name('profile.edit');
-    Route::put('/profile', [PharmacistPrescriptionController::class, 'updateProfile'])->name('profile.update');
 
     // Other Pharmacist Routes
     Route::get('/repeats', fn () => Inertia::render('Pharmacist/Repeats'))->name('repeats');
@@ -73,7 +77,8 @@ Route::middleware(['auth', 'role:pharmacist'])->prefix('pharmacist')->name('phar
 });
 
 Route::middleware(['auth', 'role:customer'])->group(function () {
-    Route::get('/customer/dashboard', fn () => Inertia::render('Customer/Dashboard'));
+    Route::get('/customer/dashboard', [CustomerDashboardController::class, 'index'])->name('customer.dashboard');
+    //Route::get('/customer/dashboard', fn () => Inertia::render('Customer/Dashboard'));
     Route::post('/prescriptions/{prescription}/request-repeat', [PrescriptionController::class, 'requestRepeat'])
     ->name('customer.prescriptions.request-repeat');
     Route::get('/prescriptions/export/pdf', [PrescriptionController::class, 'exportPdf'])
@@ -105,6 +110,33 @@ Route::middleware(['auth', 'role:manager'])->prefix('manager')->name('manager.')
 
     // Reports
     Route::get('/reports', fn () => Inertia::render('Manager/Reports/Index'))->name('reports.index');
+});
+
+Route::middleware(['auth', 'role:manager'])->group(function () {
+    // Pharmacy Management (for Managers)
+    Route::get('/manager/pharmacies', [PharmacyController::class, 'index'])->name('manager.pharmacies.index'); // List all managed pharmacies
+    Route::get('/manager/pharmacies/create', [PharmacyController::class, 'create'])->name('manager.pharmacies.create'); // Form to add new pharmacy
+    Route::post('/manager/pharmacies', [PharmacyController::class, 'store'])->name('manager.pharmacies.store'); // Store new pharmacy
+     // NEW: Routes for editing/updating an existing pharmacy
+    Route::get('/manager/pharmacies/{pharmacy}/edit', [PharmacyController::class, 'edit'])->name('manager.pharmacies.edit'); // Displays the edit form
+    Route::put('/manager/pharmacies/{pharmacy}', [PharmacyController::class, 'update'])->name('manager.pharmacies.update'); // Handles the form submission
+
+     Route::resource('manager/active-ingredients', ActiveIngredientController::class)
+        ->names('manager.activeIngredients') // Customizes the route names (e.g., manager.activeIngredients.index)
+        ->except(['show']);
+
+        Route::resource('manager/dosage-forms', DosageFormController::class)
+        ->names('manager.dosageForms') // Customizes the route names (e.g., manager.dosageForms.index)
+        ->except(['show']); 
+
+        // Pharmacist Management (for Managers)
+    Route::resource('manager/pharmacists', PharmacistController::class)
+        ->names('manager.pharmacists')
+        ->except(['show']);
+    // Add routes for editing and deleting individual pharmacies if needed later
+    // Route::get('/manager/pharmacies/{pharmacy}/edit', [PharmacyController::class, 'edit'])->name('manager.pharmacies.edit');
+    // Route::put('/manager/pharmacies/{pharmacy}', [PharmacyController::class, 'update'])->name('manager.pharmacies.update');
+    // Route::delete('/manager/pharmacies/{pharmacy}', [PharmacyController::class, 'destroy'])->name('manager.pharmacies.destroy');
 });
 
 require __DIR__.'/settings.php';

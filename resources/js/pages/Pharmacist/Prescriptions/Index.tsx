@@ -29,7 +29,12 @@ export default function PrescriptionIndex({ prescriptions }: { prescriptions: Pr
     const [dateFilter, setDateFilter] = useState('');
 
     const { delete: destroy, processing } = useForm();
-    const { flash } = usePage().props as any;
+    interface FlashMessages {
+        success?: string;
+        error?: string;
+    }
+
+    const { flash } = usePage().props as { flash?: FlashMessages };
 
     useEffect(() => {
         if (flash?.success) {
