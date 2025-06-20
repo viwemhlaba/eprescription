@@ -11,6 +11,7 @@ use Database\Seeders\DoctorSeeder;
 use Database\Seeders\MedicationSeeder;
 use Database\Seeders\PrescriptionItemSeeder;
 use Database\Seeders\UserSeeder; // Add this line
+use Database\Seeders\MedicationSupplierSeeder; // Add this line
 
 class DatabaseSeeder extends Seeder
 {
@@ -29,6 +30,7 @@ class DatabaseSeeder extends Seeder
             PrescriptionSeeder::class,
             PrescriptionItemSeeder::class,
             CustomerOrderSeeder::class,
+            MedicationSupplierSeeder::class, // Add this line
         ]);
     }
 }

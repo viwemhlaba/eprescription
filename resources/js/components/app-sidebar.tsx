@@ -129,8 +129,8 @@ export function AppSidebar() {
             icon: Pill,
         },
         {
-            title: 'Suppliers',
-            href: '/manager/suppliers',
+            title: 'Medication Suppliers',
+            href: route('manager.suppliers.index'),
             icon: ShoppingCart,
         },
         {

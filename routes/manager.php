@@ -27,5 +27,17 @@ Route::middleware(['auth', 'role:manager'])->prefix('manager')->name('manager.')
 
     // Reports
     Route::get('/reports', fn () => Inertia::render('Manager/Reports/Index'))->name('reports.index');
+
+    // Suppliers CRUD (resource routes)
+    Route::resource('suppliers', App\Http\Controllers\MedicationSupplierController::class)
+        ->except(['show'])
+        ->names([
+            'index' => 'suppliers.index',
+            'create' => 'suppliers.create',
+            'store' => 'suppliers.store',
+            'edit' => 'suppliers.edit',
+            'update' => 'suppliers.update',
+            'destroy' => 'suppliers.destroy',
+        ]);
 });
 
