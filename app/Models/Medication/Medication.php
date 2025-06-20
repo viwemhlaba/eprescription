@@ -20,6 +20,9 @@ class Medication extends Model
         'dosage_form_id',
         'schedule',
         'current_sale_price',
+        'supplier_id',
+        'reorder_level',
+        'quantity_on_hand',
     ];
 
 
@@ -45,7 +48,13 @@ class Medication extends Model
 
     public function activeIngredients()
     {
-        return $this->belongsToMany(ActiveIngredient::class);
+        return $this->belongsToMany(ActiveIngredient::class, 'active_ingredient_medication')
+            ->withPivot('strength');
+    }
+
+    public function supplier()
+    {
+        return $this->belongsTo(\App\Models\MedicationSupplier::class, 'supplier_id');
     }
 
 }

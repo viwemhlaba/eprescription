@@ -39,5 +39,17 @@ Route::middleware(['auth', 'role:manager'])->prefix('manager')->name('manager.')
             'update' => 'suppliers.update',
             'destroy' => 'suppliers.destroy',
         ]);
+
+    // Medications CRUD (resource routes)
+    Route::resource('medications', App\Http\Controllers\MedicationController::class)
+        ->except(['show'])
+        ->names([
+            'index' => 'medications.index',
+            'create' => 'medications.create',
+            'store' => 'medications.store',
+            'edit' => 'medications.edit',
+            'update' => 'medications.update',
+            'destroy' => 'medications.destroy',
+        ]);
 });
 

@@ -7,9 +7,19 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('medications', function (Blueprint $table) {
-            // First drop the foreign key, then the column
-            $table->dropForeign(['active_ingredient_id']);
-            $table->dropColumn('active_ingredient_id');
+            // Only drop if the column exists
+            if (Schema::hasColumn('medications', 'active_ingredient_id')) {
+                try {
+                    $table->dropForeign(['active_ingredient_id']);
+                } catch (\Exception $e) {
+                    // Ignore if already dropped
+                }
+                try {
+                    $table->dropColumn('active_ingredient_id');
+                } catch (\Exception $e) {
+                    // Ignore if already dropped
+                }
+            }
         });
     }
 

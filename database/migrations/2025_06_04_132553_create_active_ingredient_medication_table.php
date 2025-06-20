@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('medication_id')->constrained()->onDelete('cascade');
             $table->foreignId('active_ingredient_id')->constrained()->onDelete('cascade');
+            $table->string('strength'); // e.g., "500mg"
             $table->timestamps();
         });
     }

@@ -17,8 +17,11 @@ class MedicationFactory extends Factory
             'name' => fake()->unique()->word(),
             'active_ingredient_id' => ActiveIngredient::factory(),
             'dosage_form_id' => DosageForm::factory(),
-            'schedule' => 'Schedule ' . fake()->numberBetween(0, 6),
+            'schedule' => fake()->numberBetween(0, 6),
             'current_sale_price' => fake()->randomFloat(2, 20, 200),
+            'supplier_id' => \App\Models\MedicationSupplier::factory(),
+            'reorder_level' => fake()->numberBetween(10, 100),
+            'quantity_on_hand' => fake()->numberBetween(0, 500),
         ];
     }
 }

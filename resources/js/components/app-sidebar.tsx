@@ -109,6 +109,11 @@ export function AppSidebar() {
             icon: ClipboardList,
         },
         {
+            title: 'Medications', // NEW: Add this item
+            href: '/manager/medications', // NEW: Link to the index page
+            icon: Pill, // NEW: Use Pill icon, or choose another that fits
+        },
+        {
             title: 'Active Ingredients', // NEW: Add this item
             href: route('manager.activeIngredients.index'), // NEW: Link to the index page
             icon: FlaskConical, // NEW: Use FlaskConical icon, or choose another that fits

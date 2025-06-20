@@ -15,9 +15,13 @@ return new class extends Migration
             $table->id();
             $table->foreignId('dosage_form_id')->constrained()->onDelete('cascade');
             $table->foreignId('active_ingredient_id')->constrained()->onDelete('cascade');
-            $table->string('name');
-            $table->string('schedule')->nullable(); // e.g., Schedule 0–7
+            $table->string('name')->unique();
+            $table->unsignedTinyInteger('schedule'); // 0–6
             $table->decimal('current_sale_price', 10, 2)->default(0);
+            $table->unsignedBigInteger('supplier_id');
+            $table->foreign('supplier_id')->references('id')->on('medication_suppliers')->onDelete('cascade');
+            $table->integer('reorder_level');
+            $table->integer('quantity_on_hand');
             $table->timestamps();
             $table->softDeletes();
         });

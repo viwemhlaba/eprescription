@@ -14,4 +14,9 @@ class MedicationSupplier extends Model
         'contact_person',
         'email',
     ];
+
+    public function medications()
+    {
+        return $this->hasMany(\App\Models\Medication\Medication::class, 'supplier_id');
+    }
 }

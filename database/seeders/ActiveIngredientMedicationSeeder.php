@@ -17,9 +17,11 @@ class ActiveIngredientMedicationSeeder extends Seeder
         $ingredients = ActiveIngredient::all();
 
         Medication::all()->each(function ($medication) use ($ingredients) {
-            $medication->activeIngredients()->sync(
-                $ingredients->random(rand(1, 3))->pluck('id')->toArray()
-            );
+            $attachData = [];
+            foreach ($ingredients->random(rand(1, 3)) as $ingredient) {
+                $attachData[$ingredient->id] = ['strength' => fake()->randomElement(['250mg', '500mg', '1g', '5mg'])];
+            }
+            $medication->activeIngredients()->sync($attachData);
         });
     }
 }
