@@ -57,4 +57,14 @@ class Medication extends Model
         return $this->belongsTo(\App\Models\MedicationSupplier::class, 'supplier_id');
     }
 
+    public function addStock(int $amount)
+    {
+        $this->increment('quantity_on_hand', $amount);
+    }
+
+    public function setStock(int $amount)
+    {
+        $this->update(['quantity_on_hand' => $amount]);
+    }
+
 }

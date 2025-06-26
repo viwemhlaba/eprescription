@@ -3,7 +3,7 @@
 namespace Tests\Feature\Pharmacist;
 
 use App\Models\User;
-use App\Models\Prescription;
+use App\Models\Customer\Prescription;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -35,7 +35,7 @@ class ViewPrescriptionsTest extends TestCase
         $response->assertInertia(fn ($page) => $page
             ->component('Pharmacist/Prescriptions/Index')
             ->has('prescriptions', 1)
-            ->where('prescriptions.0.name', 'Prescription A')
+            ->where('prescriptions.0.prescription_name', 'Prescription A')
         );
     }
 }

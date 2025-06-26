@@ -12,6 +12,8 @@ use Database\Seeders\MedicationSeeder;
 use Database\Seeders\PrescriptionItemSeeder;
 use Database\Seeders\UserSeeder; // Add this line
 use Database\Seeders\MedicationSupplierSeeder; // Add this line
+use Database\Seeders\StockOrderSeeder; // Add this line
+use Database\Seeders\RoleSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -23,14 +25,14 @@ class DatabaseSeeder extends Seeder
         // User::factory(10)->create();
 
         $this->call([
+            RoleSeeder::class,
             UserSeeder::class, // Add this line
             DoctorSeeder::class,
             MedicationSeeder::class,
             CustomerSeeder::class,
             PrescriptionSeeder::class,
             PrescriptionItemSeeder::class,
-            CustomerOrderSeeder::class,
-            MedicationSupplierSeeder::class, // Add this line
+            StockOrderSeeder::class,
         ]);
     }
 }

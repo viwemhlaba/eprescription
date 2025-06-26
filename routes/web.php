@@ -137,5 +137,7 @@ Route::middleware(['auth', 'role:manager'])->group(function () {
     // Route::delete('/manager/pharmacies/{pharmacy}', [PharmacyController::class, 'destroy'])->name('manager.pharmacies.destroy');
 });
 
+
+
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

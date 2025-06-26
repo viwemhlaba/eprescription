@@ -129,34 +129,24 @@ export function AppSidebar() {
             icon: Users, // Using Users icon
         },
         {
-            title: 'Catalogue',
-            href: '/manager/catalogue/medications',
-            icon: Pill,
-        },
-        {
             title: 'Medication Suppliers',
             href: route('manager.suppliers.index'),
             icon: ShoppingCart,
         },
         {
-            title: 'People',
-            href: '/manager/people/pharmacists',
-            icon: Users,
-        },
-        {
-            title: 'Stock',
-            href: '/manager/stock',
-            icon: PackageSearch,
-        },
-        {
             title: 'Orders',
-            href: '/manager/orders',
+            href: route('manager.orders.index'),
             icon: ShoppingCart,
         },
         {
             title: 'Reports',
             href: '/manager/reports',
             icon: FileText,
+        },
+        {
+            title: 'Manage Stock',
+            href: '/manager/medications/stock', // Updated link
+            icon: PackageSearch,
         },
     ];
 

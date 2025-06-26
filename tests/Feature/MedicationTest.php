@@ -73,7 +73,7 @@ class MedicationTest extends TestCase
         $medication = Medication::factory()->create();
 
         $response = $this->actingAs($user)->delete(route('manager.medications.destroy', $medication->id));
-        $response->assertStatus(200);
+        $response->assertStatus(204);
         $this->assertSoftDeleted('medications', ['id' => $medication->id]);
     }
 }

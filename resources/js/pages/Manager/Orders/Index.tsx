@@ -1,12 +1,127 @@
+import { DataTable } from '@/components/data-table';
 import Heading from '@/components/heading';
+import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Separator } from '@/components/ui/separator';
 import AppLayout from '@/layouts/app-layout';
+import { PageProps } from '@/types';
+import { Head, Link } from '@inertiajs/react';
+import { ColumnDef } from '@tanstack/react-table';
+import { Eye, MoreHorizontal, Package, Plus } from 'lucide-react';
+import { route } from 'ziggy-js';
 
-export default function OrdersIndex() {
+interface StockOrder {
+    id: number;
+    supplier_name: string;
+    status: 'pending' | 'completed';
+    total_items: number;
+    created_at: string;
+    received_at?: string;
+}
+
+const columns: ColumnDef<StockOrder>[] = [
+    {
+        accessorKey: 'id',
+        header: 'Order ID',
+        cell: ({ row }) => `#${row.getValue('id')}`,
+    },
+    {
+        accessorKey: 'supplier_name',
+        header: 'Supplier',
+    },
+    {
+        accessorKey: 'total_items',
+        header: 'Total Items',
+    },
+    {
+        accessorKey: 'status',
+        header: 'Status',
+        cell: ({ row }) => {
+            const status = row.getValue('status') as string;
+            return (
+                <span
+                    className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
+                        status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                    }`}
+                >
+                    {status.charAt(0).toUpperCase() + status.slice(1)}
+                </span>
+            );
+        },
+    },
+    {
+        accessorKey: 'created_at',
+        header: 'Order Date',
+        cell: ({ row }) => new Date(row.getValue('created_at')).toLocaleDateString(),
+    },
+    {
+        accessorKey: 'received_at',
+        header: 'Received Date',
+        cell: ({ row }) => {
+            const receivedAt = row.getValue('received_at') as string;
+            return receivedAt ? new Date(receivedAt).toLocaleDateString() : '-';
+        },
+    },
+    {
+        id: 'actions',
+        cell: ({ row }) => {
+            const order = row.original;
+            return (
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Open menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                            <Link href={route('manager.orders.show', order.id)}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                View Details
+                            </Link>
+                        </DropdownMenuItem>
+                        {order.status === 'pending' && (
+                            <DropdownMenuItem asChild>
+                                <Link href={route('manager.orders.receive', order.id)} method="patch" as="button">
+                                    <Package className="mr-2 h-4 w-4" />
+                                    Mark as Received
+                                </Link>
+                            </DropdownMenuItem>
+                        )}
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            );
+        },
+    },
+];
+
+interface PaginationLink {
+    url: string | null;
+    label: string;
+    active: boolean;
+}
+
+export default function Index({ orders }: PageProps<{ orders: { data: StockOrder[]; links: PaginationLink[] } }>) {
     return (
         <AppLayout>
-            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
-                <Heading title="Orders" description="Track and manage customer and supplier orders." />
-                <p>Allows the manager to review orders, update their status, and coordinate with suppliers.</p>
+            <Head title="Stock Orders" />
+
+            <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+                <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                        <Heading title="Stock Orders" description="Manage medication stock orders from suppliers" />
+                        <Link href={route('manager.orders.create')}>
+                            <Button>
+                                <Plus className="mr-2 h-4 w-4" />
+                                Create Order
+                            </Button>
+                        </Link>
+                    </div>
+                    <Separator />
+
+                    <DataTable columns={columns} data={orders.data} links={orders.links} />
+                </div>
             </div>
         </AppLayout>
     );

@@ -25,6 +25,7 @@ class PharmacistPrescriptionController extends Controller
     public function index()
     {
         $prescriptions = Prescription::with('user') // eager load customer
+            ->where('status', 'pending')
             ->latest()
             ->get()
             ->map(function ($prescription) {

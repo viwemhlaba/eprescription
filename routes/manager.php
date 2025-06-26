@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Controllers\StockController;
+use App\Http\Controllers\OrderController;
 
 Route::middleware(['auth', 'role:manager'])->prefix('manager')->name('manager.')->group(function () {
     // Dashboard
@@ -21,9 +23,16 @@ Route::middleware(['auth', 'role:manager'])->prefix('manager')->name('manager.')
 
     // Stock
     Route::get('/stock', fn () => Inertia::render('Manager/Stock/Index'))->name('stock.index');
+    Route::get('/medications/stock', [StockController::class, 'index'])->name('medications.stock.index');
+    Route::patch('/medications/{medication}/set-stock', [\App\Http\Controllers\MedicationController::class, 'setStock'])->name('medications.set-stock');
+    Route::patch('/medications/{medication}/add-stock', [\App\Http\Controllers\MedicationController::class, 'addStock'])->name('medications.add-stock');
 
     // Orders
-    Route::get('/orders', fn () => Inertia::render('Manager/Orders/Index'))->name('orders.index');
+    Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders/create', [OrderController::class, 'create'])->name('orders.create');
+    Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+    Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
+    Route::patch('/orders/{order}/receive', [OrderController::class, 'receive'])->name('orders.receive');
 
     // Reports
     Route::get('/reports', fn () => Inertia::render('Manager/Reports/Index'))->name('reports.index');

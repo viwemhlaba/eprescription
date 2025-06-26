@@ -9,6 +9,8 @@ use App\Models\Medication\ActiveIngredient;
 use App\Models\MedicationSupplier;
 use App\Http\Requests\StoreMedicationRequest;
 use App\Http\Requests\UpdateMedicationRequest;
+use App\Http\Requests\Medication\SetMedicationStockRequest;
+use App\Http\Requests\Medication\AddMedicationStockRequest;
 use Inertia\Inertia;
 
 class MedicationController extends Controller
@@ -107,6 +109,22 @@ class MedicationController extends Controller
     {
         $medication = Medication::findOrFail($id);
         $medication->delete();
-        return response()->json(['message' => 'Medication deleted successfully.']);
+        return response()->json(null, 204);
+    }
+
+    public function setStock(SetMedicationStockRequest $request, Medication $medication)
+    {
+        $medication->update([
+            'quantity_on_hand' => $request->validated()['quantity'],
+        ]);
+
+        return redirect()->back()->with('success', 'Stock quantity set successfully.');
+    }
+
+    public function addStock(AddMedicationStockRequest $request, Medication $medication)
+    {
+        $medication->increment('quantity_on_hand', $request->validated()['quantity']);
+
+        return redirect()->back()->with('success', 'Stock quantity added successfully.');
     }
 }

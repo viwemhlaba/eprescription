@@ -13,12 +13,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany; // Assuming a user can be a 
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use App\Models\Pharmacist; // <-- ADD THIS LINE
-
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, HasRoles;
 
     //declaring roles
     const ROLE_CUSTOMER = 'customer';
