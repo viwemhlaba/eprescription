@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\Customer\PrescriptionController;
 use App\Http\Controllers\Pharmacist\PharmacistPrescriptionController;
+use App\Http\Controllers\Pharmacist\PharmacistReportController;
 use App\Http\Controllers\DoctorController;
 use App\Http\Controllers\Manager\ActiveIngredientController; // Add this line
 use App\Http\Controllers\Manager\DosageFormController; // Add this line
@@ -47,6 +48,11 @@ Route::middleware(['auth', 'role:pharmacist'])->prefix('pharmacist')->name('phar
     Route::post('/prescriptions', [PharmacistPrescriptionController::class, 'store'])->name('prescriptions.store');
     Route::delete('/prescriptions/{prescription}', [PharmacistPrescriptionController::class, 'destroy'])->name('prescriptions.destroy');
 
+    // Dispense Routes
+    Route::get('/prescriptions/dispense', [PharmacistPrescriptionController::class, 'dispenseIndex'])->name('prescriptions.dispense');
+    Route::get('/prescriptions/dispense/{prescription}', [PharmacistPrescriptionController::class, 'dispenseShow'])->name('prescriptions.dispense.show');
+    Route::post('/prescriptions/dispense', [PharmacistPrescriptionController::class, 'dispenseStore'])->name('prescriptions.dispense.store');
+
     // **CHANGE 1: This route was causing the 405 error.**
     // **Change method from POST to PUT and point to 'storeLoaded'.**
     Route::put('/prescriptions/{prescription}/load-action', [PharmacistPrescriptionController::class, 'storeLoaded'])
@@ -71,7 +77,13 @@ Route::middleware(['auth', 'role:pharmacist'])->prefix('pharmacist')->name('phar
     // Other Pharmacist Routes
     Route::get('/repeats', fn () => Inertia::render('Pharmacist/Repeats'))->name('repeats');
     Route::get('/stock', fn () => Inertia::render('Pharmacist/Stock'))->name('stock');
-    Route::get('/reports', fn () => Inertia::render('Pharmacist/Reports'))->name('reports');
+    
+    // Reports Routes
+    Route::get('/reports', [PharmacistReportController::class, 'index'])->name('reports');
+    Route::get('/reports/dispensed', [PharmacistReportController::class, 'dispensedForm'])->name('reports.dispensed');
+    Route::get('/reports/dispensed/pdf', [PharmacistReportController::class, 'dispensedPdf'])->name('reports.dispensed-pdf');
+    Route::get('/reports/{report}/download', [PharmacistReportController::class, 'downloadReport'])->name('reports.download');
+    Route::delete('/reports/{report}', [PharmacistReportController::class, 'deleteReport'])->name('reports.delete');
 });
 
 Route::middleware(['auth', 'role:customer'])->group(function () {

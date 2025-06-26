@@ -22,6 +22,7 @@ class PrescriptionItem extends Model
         'quantity',
         'instructions',
         'repeats',
+        'repeats_used',
         'price',
     ];
 

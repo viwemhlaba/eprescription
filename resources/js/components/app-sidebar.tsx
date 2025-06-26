@@ -86,6 +86,11 @@ export function AppSidebar() {
             icon: FileText,
         },
         {
+            title: 'Dispense',
+            href: '/pharmacist/prescriptions/dispense',
+            icon: Pill,
+        },
+        {
             title: 'Dispense Queue',
             href: '/pharmacist/repeats',
             icon: PackageSearch,

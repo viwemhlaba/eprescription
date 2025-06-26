@@ -11,14 +11,17 @@ use App\Models\User; // <--- Ensure User model is imported
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Mail\PrescriptionApprovedMail;
+use App\Mail\PrescriptionReadyCollectionMail;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 
 // Add this import for the Allergy model if you have one, or adjust as needed
-use App\Models\Customer\CustomerAllergy;
+use App\Models\CustomerAllergy;
 use App\Models\Medication\ActiveIngredient; // <--- ADD THIS IMPORT for ActiveIngredient
+use App\Models\DispensedItem;
 
 class PharmacistPrescriptionController extends Controller
 {
@@ -169,25 +172,32 @@ class PharmacistPrescriptionController extends Controller
         $validated = $request->validate([
             'patient_id_number' => 'required|string|max:255',
             'doctor_id' => 'required|exists:doctors,id',
-            'repeats_total' => 'required|integer|min:0', // Ensure repeats_total is always defined and validated
-            'items' => 'required|array',
+            'repeats_total' => 'required|integer|min:0|max:99', // Add max limit for safety
+            'items' => 'required|array|min:1', // Ensure at least one item
             'items.*.medication_id' => 'required|exists:medications,id',
-            'items.*.quantity' => 'required|integer|min:1',
-            'items.*.instructions' => 'nullable|string',
+            'items.*.quantity' => 'required|integer|min:1|max:999', // Add max limit
+            'items.*.instructions' => 'nullable|string|max:500', // Add max length
+            'status' => 'required|in:approved,dispensed,rejected', // Validate status
+            'notes' => 'nullable|string|max:1000', // Add notes validation
         ]);
+
+        // Check if prescription can be updated (business logic)
+        if (in_array($prescription->status, ['dispensed', 'rejected'])) {
+            return back()->withErrors(['status' => 'This prescription cannot be modified.']);
+        }
 
         $prescription->update([
             'patient_id_number' => $validated['patient_id_number'],
             'doctor_id' => $validated['doctor_id'],
-            'status' => 'approved',
-            'repeats_total' => $validated['repeats_total'] ?? 0, // Default to 0 if not provided
+            'status' => $validated['status'],
+            'repeats_total' => $validated['repeats_total'],
             'repeats_used' => 0, // Reset repeats used
             'next_repeat_date' => null, // Clear next repeat date
         ]);
 
         // Ensure $prescription->user is loaded before trying to access its email
         $prescription->loadMissing('user');
-        if ($prescription->user) {
+        if ($prescription->user && $validated['status'] === 'approved') {
             Mail::to($prescription->user->email)->send(new PrescriptionApprovedMail($prescription));
         }
 
@@ -196,6 +206,12 @@ class PharmacistPrescriptionController extends Controller
 
         foreach ($validated['items'] as $item) {
             $medication = Medication::findOrFail($item['medication_id']);
+            
+            // Check if medication is in stock
+            if ($medication->quantity_on_hand < $item['quantity']) {
+                return back()->withErrors(['items' => "Insufficient stock for {$medication->name}. Available: {$medication->quantity_on_hand}"]);
+            }
+            
             $price = $medication->current_sale_price * $item['quantity'];
 
             PrescriptionItem::create([
@@ -205,10 +221,15 @@ class PharmacistPrescriptionController extends Controller
                 'instructions' => $item['instructions'] ?? null,
                 'price' => $price,
             ]);
+            
+            // Update medication stock if dispensed
+            if ($validated['status'] === 'dispensed') {
+                $medication->decrement('quantity_on_hand', $item['quantity']);
+            }
         }
 
         return redirect()->route('pharmacist.prescriptions.index')
-            ->with('success', 'Prescription successfully loaded.');
+            ->with('success', 'Prescription successfully processed.');
     }
 
     public function update(Request $request, $id)
@@ -434,5 +455,187 @@ class PharmacistPrescriptionController extends Controller
         $user->save();
 
         return redirect()->route('pharmacist.profile')->with('success', 'Profile updated successfully.');
+    }
+
+    /**
+     * Display approved prescriptions ready for dispensing
+     */
+    public function dispenseIndex()
+    {
+        $prescriptions = Prescription::with('user', 'doctor', 'items.medication')
+            ->where('status', 'approved')
+            ->whereHas('items', function ($query) {
+                $query->whereRaw('repeats_used < repeats');
+            })
+            ->orWhere(function ($query) {
+                $query->where('status', 'approved')
+                    ->whereRaw('repeats_used < repeats_total');
+            })
+            ->latest()
+            ->get()
+            ->map(function ($prescription) {
+                return [
+                    'id' => $prescription->id,
+                    'customer_name' => $prescription->user->name ?? 'Unknown',
+                    'prescription_name' => $prescription->name,
+                    'upload_date' => $prescription->created_at->format('Y-m-d'),
+                    'status' => $prescription->status,
+                    'file_path' => $prescription->file_path,
+                    'repeats_total' => $prescription->repeats_total,
+                    'repeats_used' => $prescription->repeats_used,
+                    'next_repeat_date' => $prescription->next_repeat_date ? Carbon::parse($prescription->next_repeat_date)->format('Y-m-d') : null,
+                    'delivery_method' => $prescription->delivery_method,
+                    'patient_id_number' => $prescription->patient_id_number,
+                ];
+            });
+
+        return Inertia::render('Pharmacist/Prescriptions/Dispense', [
+            'prescriptions' => $prescriptions,
+        ]);
+    }
+
+    /**
+     * Show detailed dispense view for a prescription
+     */
+    public function dispenseShow(Prescription $prescription)
+    {
+        // Ensure prescription is approved and has repeats available
+        if ($prescription->status !== 'approved' || $prescription->repeats_used >= $prescription->repeats_total) {
+            return redirect()->route('pharmacist.prescriptions.dispense')
+                ->with('error', 'This prescription is not available for dispensing.');
+        }
+
+        $prescription->load([
+            'user.allergies.activeIngredient',
+            'doctor',
+            'items.medication.activeIngredients'
+        ]);
+
+        // Calculate repeats remaining for each item
+        $prescription->items = $prescription->items->map(function ($item) {
+            $item->repeats_remaining = $item->repeats - $item->repeats_used;
+            return $item;
+        });
+
+        // Fetch customer allergies
+        $customerAllergies = [];
+        if ($prescription->user && $prescription->user->allergies) {
+            $customerAllergies = $prescription->user->allergies->map(function ($allergy) {
+                return [
+                    'id' => $allergy->id,
+                    'active_ingredient_id' => $allergy->active_ingredient_id,
+                    'active_ingredient_name' => $allergy->activeIngredient->name ?? 'Unknown Active Ingredient',
+                ];
+            })->toArray();
+        }
+
+        return Inertia::render('Pharmacist/Prescriptions/DispenseShow', [
+            'prescription' => $prescription,
+            'customerAllergies' => $customerAllergies,
+        ]);
+    }
+
+    /**
+     * Process the dispensing of prescription items
+     */
+    public function dispenseStore(Request $request)
+    {
+        $validated = $request->validate([
+            'prescription_id' => 'required|exists:prescriptions,id',
+            'items' => 'required|array|min:1',
+            'items.*.item_id' => 'required|exists:prescription_items,id',
+            'items.*.quantity' => 'required|integer|min:1',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        $prescription = Prescription::with(['user', 'items.medication'])->findOrFail($validated['prescription_id']);
+
+        // Check if prescription can be dispensed
+        if ($prescription->status !== 'approved') {
+            return back()->withErrors(['prescription' => 'This prescription is not approved for dispensing.']);
+        }
+
+        if ($prescription->repeats_used >= $prescription->repeats_total) {
+            return back()->withErrors(['prescription' => 'No more repeats available for this prescription.']);
+        }
+
+        DB::transaction(function () use ($prescription, $validated) {
+            $dispensedItems = [];
+            $totalCost = 0;
+
+            // Process each selected item
+            foreach ($validated['items'] as $itemData) {
+                $prescriptionItem = $prescription->items->find($itemData['item_id']);
+                if (!$prescriptionItem) continue;
+
+                $medication = $prescriptionItem->medication;
+                $quantity = $itemData['quantity'];
+
+                // Check if item has repeats remaining
+                if ($prescriptionItem->repeats_used >= $prescriptionItem->repeats) {
+                    throw new \Exception("No more repeats available for {$medication->name}.");
+                }
+
+                // Check stock availability
+                if ($medication->quantity_on_hand < $quantity) {
+                    throw new \Exception("Insufficient stock for {$medication->name}. Available: {$medication->quantity_on_hand}");
+                }
+
+                // Update medication stock
+                $medication->decrement('quantity_on_hand', $quantity);
+
+                // Update item repeat usage
+                $prescriptionItem->increment('repeats_used');
+
+                // Calculate cost
+                $itemCost = $medication->current_sale_price * $quantity;
+                $totalCost += $itemCost;
+
+                // Record dispensed item in the database
+                DispensedItem::create([
+                    'prescription_id' => $prescription->id,
+                    'prescription_item_id' => $prescriptionItem->id,
+                    'medication_id' => $medication->id,
+                    'pharmacist_id' => Auth::id(),
+                    'quantity_dispensed' => $quantity,
+                    'cost' => $itemCost,
+                    'dispensed_at' => now(),
+                    'notes' => $validated['notes'] ?? null,
+                ]);
+
+                $dispensedItems[] = [
+                    'medication_name' => $medication->name,
+                    'quantity' => $quantity,
+                    'cost' => $itemCost,
+                ];
+            }
+
+            // Update prescription repeats
+            $prescription->increment('repeats_used');
+
+            // Check if all items are fully dispensed (no more repeats for any item)
+            $prescription->refresh();
+            $allItemsFullyDispensed = $prescription->items->every(function ($item) {
+                return $item->repeats_used >= $item->repeats;
+            });
+
+            // If all items fully dispensed or prescription repeats exhausted, mark as fully dispensed
+            if ($allItemsFullyDispensed || $prescription->repeats_used >= $prescription->repeats_total) {
+                $prescription->update(['status' => 'dispensed']);
+            }
+
+            // Update next repeat date (e.g., 30 days from now)
+            if ($prescription->repeats_used < $prescription->repeats_total) {
+                $prescription->update(['next_repeat_date' => now()->addDays(30)]);
+            }
+
+            // Send notification email to customer (collection ready)
+            if ($prescription->user) {
+                Mail::to($prescription->user->email)->send(new PrescriptionReadyCollectionMail($prescription));
+            }
+        });
+
+        return redirect()->route('pharmacist.prescriptions.dispense')
+            ->with('success', 'Prescription items dispensed successfully. Customer has been notified.');
     }
 }

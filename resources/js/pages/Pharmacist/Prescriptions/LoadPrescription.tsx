@@ -420,7 +420,12 @@ const LoadPrescription: React.FC<LoadPrescriptionProps> = ({ prescription, docto
                                 <Button
                                     type="submit"
                                     onClick={() => setData('status', 'approved')}
-                                    disabled={processing || prescription.status === 'approved' || prescription.status === 'dispensed'}
+                                    disabled={
+                                        processing ||
+                                        prescription.status === 'approved' ||
+                                        prescription.status === 'dispensed' ||
+                                        prescription.status === 'rejected'
+                                    }
                                     className="w-full sm:w-auto"
                                 >
                                     {processing && data.status === 'approved' ? 'Approving...' : 'Approve Prescription'}
@@ -428,7 +433,12 @@ const LoadPrescription: React.FC<LoadPrescriptionProps> = ({ prescription, docto
                                 <Button
                                     type="submit"
                                     onClick={() => setData('status', 'dispensed')}
-                                    disabled={processing || prescription.status === 'dispensed' || prescription.status === 'pending'}
+                                    disabled={
+                                        processing ||
+                                        prescription.status === 'dispensed' ||
+                                        prescription.status === 'pending' ||
+                                        prescription.status === 'rejected'
+                                    }
                                     className="w-full sm:w-auto"
                                 >
                                     {processing && data.status === 'dispensed' ? 'Dispensing...' : 'Dispense Medication'}
@@ -440,7 +450,7 @@ const LoadPrescription: React.FC<LoadPrescriptionProps> = ({ prescription, docto
                                     variant="destructive"
                                     className="w-full sm:w-auto"
                                 >
-                                    Reject Prescription
+                                    {processing && data.status === 'rejected' ? 'Rejecting...' : 'Reject Prescription'}
                                 </Button>
                                 <Button asChild variant="outline" className="w-full sm:w-auto">
                                     <Link href={route('pharmacist.prescriptions.index')}>Back to Prescriptions</Link>

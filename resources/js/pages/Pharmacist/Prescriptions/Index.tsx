@@ -179,6 +179,15 @@ export default function PrescriptionIndex({ prescriptions }: { prescriptions: Pr
                                                 View
                                             </Link>
 
+                                            {p.status === 'approved' && p.repeats_used < p.repeats_total && (
+                                                <Link
+                                                    href={route('pharmacist.prescriptions.dispense.show', p.id)}
+                                                    className="text-sm text-green-600 hover:underline"
+                                                >
+                                                    Dispense
+                                                </Link>
+                                            )}
+
                                             <button onClick={() => confirmDelete(p)} className="text-sm text-red-600 hover:underline">
                                                 Delete
                                             </button>

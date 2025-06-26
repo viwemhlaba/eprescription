@@ -7,7 +7,7 @@ import { Head } from '@inertiajs/react';
 interface Medication {
     id: number;
     name: string;
-    current_sale_price: number;
+    current_sale_price: number | string;
 }
 
 interface PrescriptionItem {
@@ -37,13 +37,18 @@ interface Props {
 }
 
 export default function Show({ prescription }: Props) {
-    const total = prescription.items.reduce((sum, item) => sum + item.medication.current_sale_price * item.quantity, 0);
+    const total = prescription.items.reduce((sum, item) => {
+        const price = Number(item.medication.current_sale_price) || 0;
+        return sum + price * item.quantity;
+    }, 0);
 
     return (
         <AppLayout>
             <Head title="View Prescription" />
             <div className="mx-auto max-w-4xl rounded-lg p-6 text-gray-100 shadow-lg">
-                <Heading title="Prescription Overview" description="Detailed view of prescription" className="mb-6" />
+                <div className="mb-6">
+                    <Heading title="Prescription Overview" description="Detailed view of prescription" />
+                </div>
 
                 <Card className="mb-6 border-gray-700">
                     <CardHeader>
@@ -89,17 +94,20 @@ export default function Show({ prescription }: Props) {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {prescription.items.map((item) => (
-                                    <TableRow key={item.id} className="even:bg-gray-900">
-                                        <TableCell>{item.medication.name}</TableCell>
-                                        <TableCell>{item.instructions || '-'}</TableCell>
-                                        <TableCell className="text-right">{item.quantity}</TableCell>
-                                        <TableCell className="text-right">{item.medication.current_sale_price.toFixed(2)}</TableCell>
-                                        <TableCell className="text-right">
-                                            {(item.quantity * item.medication.current_sale_price).toFixed(2)}
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
+                                {prescription.items.map((item) => {
+                                    const price = Number(item.medication.current_sale_price) || 0;
+                                    const itemTotal = item.quantity * price;
+
+                                    return (
+                                        <TableRow key={item.id} className="even:bg-gray-900">
+                                            <TableCell>{item.medication.name}</TableCell>
+                                            <TableCell>{item.instructions || '-'}</TableCell>
+                                            <TableCell className="text-right">{item.quantity}</TableCell>
+                                            <TableCell className="text-right">R{price.toFixed(2)}</TableCell>
+                                            <TableCell className="text-right">R{itemTotal.toFixed(2)}</TableCell>
+                                        </TableRow>
+                                    );
+                                })}
                             </TableBody>
                             <tfoot>
                                 <TableRow className="border-t border-gray-700 font-semibold">
