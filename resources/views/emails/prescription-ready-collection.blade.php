@@ -16,6 +16,7 @@
     <li>Prescription: {{ $prescription->name }}</li>
     <li>Patient ID: {{ $prescription->patient_id_number ?? 'N/A' }}</li>
     <li>Date Dispensed: {{ now()->format('Y-m-d') }}</li>
+    <li><strong>Total Due: {{ $prescription->formatted_total_due }}</strong></li>
     @if($prescription->repeats_used < $prescription->repeats_total)
         <li>Remaining Repeats: {{ $prescription->repeats_total - $prescription->repeats_used }}</li>
         @if($prescription->next_repeat_date)

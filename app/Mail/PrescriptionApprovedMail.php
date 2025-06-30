@@ -15,7 +15,7 @@ class PrescriptionApprovedMail extends Mailable
 
     public function __construct(Prescription $prescription)
     {
-        $this->prescription = $prescription;
+        $this->prescription = $prescription->load('items');
     }
 
     public function build()

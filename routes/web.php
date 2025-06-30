@@ -11,6 +11,7 @@ use App\Http\Controllers\Manager\DosageFormController; // Add this line
 use App\Http\Controllers\Customer\CustomerDashboardController;
 use App\Http\Controllers\Manager\PharmacyController;
 use App\Http\Controllers\Manager\PharmacistController;
+use App\Http\Controllers\Api\AllergyCheckController; // Add this line
 
 Route::get('/', function () {
     return Inertia::render('welcome');
@@ -34,11 +35,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware(['auth', 'role:pharmacist'])->prefix('pharmacist')->name('pharmacist.')->group(function () {
     // Consolidated Dashboard Route
     Route::get('/dashboard', [PharmacistPrescriptionController::class, 'dashboard'])->name('dashboard');
-
-    // Consolidated Profile Routes
-    Route::get('/profile', [PharmacistPrescriptionController::class, 'profile'])->name('profile');
-    Route::get('/profile/edit', [PharmacistPrescriptionController::class, 'editProfile'])->name('profile.edit');
-    Route::put('/profile', [PharmacistPrescriptionController::class, 'updateProfile'])->name('profile.update');
 
 
     // Prescription Routes
@@ -149,7 +145,12 @@ Route::middleware(['auth', 'role:manager'])->group(function () {
     // Route::delete('/manager/pharmacies/{pharmacy}', [PharmacyController::class, 'destroy'])->name('manager.pharmacies.destroy');
 });
 
-
+// API Routes for Allergy Checking (accessible to pharmacists and managers)
+Route::middleware(['auth'])->prefix('api')->name('api.')->group(function () {
+    Route::post('/check-medication-allergy', [AllergyCheckController::class, 'checkMedicationAllergy'])->name('check.medication.allergy');
+    Route::get('/user-allergies/{user_id}', [AllergyCheckController::class, 'getUserAllergies'])->name('user.allergies');
+    Route::get('/medication-ingredients/{medication_id}', [AllergyCheckController::class, 'getMedicationIngredients'])->name('medication.ingredients');
+});
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

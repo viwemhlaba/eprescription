@@ -38,4 +38,20 @@ class Prescription extends Model
     {
         return $this->hasMany(PrescriptionItem::class);
     }
+
+    /**
+     * Calculate the total due amount for this prescription
+     */
+    public function getTotalDueAttribute()
+    {
+        return $this->items->sum('price');
+    }
+
+    /**
+     * Get formatted total due amount
+     */
+    public function getFormattedTotalDueAttribute()
+    {
+        return 'R ' . number_format($this->total_due, 2);
+    }
 }

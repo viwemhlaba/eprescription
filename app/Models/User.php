@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany; // Assuming a user can be a 
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use App\Models\Pharmacist; // <-- ADD THIS LINE
+use App\Models\PharmacistProfile; // <-- ADD THIS LINE
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
@@ -55,7 +56,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role', // Add role to the fillable attributes
+        'role',
     ];
 
     /**
@@ -118,5 +119,59 @@ class User extends Authenticatable
      public function pharmacist(): HasOne
     {
         return $this->hasOne(Pharmacist::class);
+    }
+
+    /**
+     * Get the pharmacist profile associated with the user
+     */
+    public function pharmacistProfile(): HasOne
+    {
+        return $this->hasOne(PharmacistProfile::class);
+    }
+
+    /**
+     * Check if the user is allergic to a specific active ingredient
+     */
+    public function isAllergicTo($activeIngredientId)
+    {
+        return $this->allergies()->where('active_ingredient_id', $activeIngredientId)->exists();
+    }
+
+    /**
+     * Check if the user is allergic to any active ingredients in a medication
+     */
+    public function isAllergicToMedication($medication)
+    {
+        // Get all active ingredient IDs from the medication
+        $medicationIngredientIds = $medication->activeIngredients()->pluck('active_ingredients.id');
+        
+        // Check if user has any allergies to these ingredients
+        return $this->allergies()
+            ->whereIn('active_ingredient_id', $medicationIngredientIds)
+            ->exists();
+    }
+
+    /**
+     * Get all active ingredients the user is allergic to
+     */
+    public function getAllergicActiveIngredients()
+    {
+        return $this->belongsToMany(
+            \App\Models\Medication\ActiveIngredient::class,
+            'customer_allergies',
+            'user_id',
+            'active_ingredient_id'
+        );
+    }
+
+    /**
+     * Get allergy conflicts for a specific medication
+     */
+    public function getAllergyConflicts($medication)
+    {
+        $medicationIngredients = $medication->activeIngredients;
+        $userAllergies = $this->getAllergicActiveIngredients;
+        
+        return $medicationIngredients->intersect($userAllergies);
     }
 }

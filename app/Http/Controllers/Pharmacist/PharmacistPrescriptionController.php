@@ -8,6 +8,7 @@ use App\Models\Medication\Medication;
 use App\Models\Customer\PrescriptionItem;
 use App\Models\Doctor;
 use App\Models\User; // <--- Ensure User model is imported
+use App\Models\PharmacistProfile; // <--- Add PharmacistProfile import
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Mail\PrescriptionApprovedMail;
@@ -15,6 +16,7 @@ use App\Mail\PrescriptionReadyCollectionMail;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 
@@ -22,6 +24,7 @@ use Carbon\Carbon;
 use App\Models\CustomerAllergy;
 use App\Models\Medication\ActiveIngredient; // <--- ADD THIS IMPORT for ActiveIngredient
 use App\Models\DispensedItem;
+use App\Services\AllergyAlertService; // <--- ADD THIS IMPORT
 
 class PharmacistPrescriptionController extends Controller
 {
@@ -196,16 +199,35 @@ class PharmacistPrescriptionController extends Controller
         ]);
 
         // Ensure $prescription->user is loaded before trying to access its email
-        $prescription->loadMissing('user');
-        if ($prescription->user && $validated['status'] === 'approved') {
-            Mail::to($prescription->user->email)->send(new PrescriptionApprovedMail($prescription));
+        $prescription->loadMissing('user.allergies.activeIngredient');
+        $customer = $prescription->user;
+        
+        if ($customer && $validated['status'] === 'approved') {
+            Mail::to($customer->email)->send(new PrescriptionApprovedMail($prescription));
         }
 
         // Clear existing items and re-add them if you're "loading" and updating all items
         $prescription->items()->delete();
 
+        // Check for allergy conflicts before adding medications
+        $allergyAlerts = [];
+
         foreach ($validated['items'] as $item) {
-            $medication = Medication::findOrFail($item['medication_id']);
+            $medication = Medication::with('activeIngredients')->findOrFail($item['medication_id']);
+            
+            // Check for allergy conflicts using direct database query
+            if ($customer) {
+                $medicationIngredientIds = $medication->activeIngredients->pluck('id');
+                $conflicts = $customer->allergies()
+                    ->whereIn('active_ingredient_id', $medicationIngredientIds)
+                    ->with('activeIngredient')
+                    ->get();
+                    
+                if ($conflicts->isNotEmpty()) {
+                    $conflictNames = $conflicts->pluck('activeIngredient.name')->implode(', ');
+                    $allergyAlerts[] = "⚠️ ALLERGY ALERT: Patient {$customer->name} is allergic to the following active ingredient(s) in {$medication->name}: {$conflictNames}";
+                }
+            }
             
             // Check if medication is in stock
             if ($medication->quantity_on_hand < $item['quantity']) {
@@ -226,6 +248,14 @@ class PharmacistPrescriptionController extends Controller
             if ($validated['status'] === 'dispensed') {
                 $medication->decrement('quantity_on_hand', $item['quantity']);
             }
+        }
+
+        // If there are allergy alerts, return them as warnings
+        if (!empty($allergyAlerts)) {
+            return back()->with([
+                'allergy_alerts' => $allergyAlerts,
+                'success' => 'Prescription updated successfully, but please review allergy alerts.'
+            ]);
         }
 
         return redirect()->route('pharmacist.prescriptions.index')
@@ -388,18 +418,76 @@ class PharmacistPrescriptionController extends Controller
             return redirect()->route('login');
         }
 
+        // Get or create pharmacist profile
+        $profile = PharmacistProfile::where('user_id', $user->id)->first();
+        if (!$profile) {
+            $profile = PharmacistProfile::create(['user_id' => $user->id]);
+        }
+        
+        // Get prescription statistics
+        $totalPrescriptionsProcessed = Prescription::whereHas('items')->count();
+        $pendingPrescriptions = Prescription::where('status', 'pending')->count();
+        $approvedPrescriptions = Prescription::where('status', 'approved')->count();
+        $dispensedPrescriptions = Prescription::where('status', 'dispensed')->count();
+        
+        // Get recent activity (last 30 days)
+        $recentActivity = Prescription::where('updated_at', '>=', Carbon::now()->subDays(30))
+            ->whereIn('status', ['approved', 'dispensed'])
+            ->count();
+            
+        // Get monthly prescription trends (last 6 months)
+        $monthlyTrends = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $month = Carbon::now()->subMonths($i);
+            $count = Prescription::whereYear('updated_at', $month->year)
+                ->whereMonth('updated_at', $month->month)
+                ->whereIn('status', ['approved', 'dispensed'])
+                ->count();
+            $monthlyTrends[] = [
+                'month' => $month->format('M Y'),
+                'count' => $count
+            ];
+        }
+
         $pharmacistData = [
+            'id' => $user->id,
             'name' => $user->name,
-            'surname' => $user->surname ?? '',
-            'idNumber' => $user->id_number ?? 'N/A',
-            'cellphoneNumber' => $user->phone_number ?? 'N/A',
-            'emailAddress' => $user->email,
-            'healthCouncilRegistrationNumber' => $user->registration_number ?? 'N/A',
-            'registrationDate' => $user->registration_date ? Carbon::parse($user->registration_date)->format('Y-m-d') : 'N/A',
+            'email' => $user->email,
+            'surname' => $profile->surname ?? '',
+            'id_number' => $profile->id_number ?? '',
+            'phone_number' => $profile->phone_number ?? '',
+            'registration_number' => $profile->registration_number ?? '',
+            'registration_date' => $profile->registration_date ? Carbon::parse($profile->registration_date)->format('Y-m-d') : null,
+            'bio' => $profile->bio ?? '',
+            'avatar_url' => $profile->avatar_url,
+            'specializations' => $profile->specializations ?? [],
+            'certifications' => $profile->certifications ?? [],
+            'qualification' => $profile->qualification ?? '',
+            'university' => $profile->university ?? '',
+            'graduation_year' => $profile->graduation_year ?? null,
+            'years_experience' => $profile->years_experience ?? 0,
+            'languages' => $profile->languages ?? [],
+            'license_status' => $profile->license_status ?? 'active',
+            'license_expiry' => $profile->license_expiry ? Carbon::parse($profile->license_expiry)->format('Y-m-d') : null,
+            'license_expiring_soon' => $profile->license_expiring_soon,
+            'years_since_registration' => $profile->years_since_registration,
+            'created_at' => $user->created_at->format('M d, Y'),
+        ];
+
+        $statistics = [
+            'total_prescriptions' => $totalPrescriptionsProcessed,
+            'pending_prescriptions' => $pendingPrescriptions,
+            'approved_prescriptions' => $approvedPrescriptions,
+            'dispensed_prescriptions' => $dispensedPrescriptions,
+            'recent_activity' => $recentActivity,
+            'monthly_trends' => $monthlyTrends,
+            'approval_rate' => $totalPrescriptionsProcessed > 0 ? 
+                round(($approvedPrescriptions + $dispensedPrescriptions) / $totalPrescriptionsProcessed * 100, 1) : 0,
         ];
 
         return Inertia::render('Pharmacist/Profile', [
             'pharmacist' => $pharmacistData,
+            'statistics' => $statistics,
         ]);
     }
 
@@ -411,18 +499,69 @@ class PharmacistPrescriptionController extends Controller
             return redirect()->route('login');
         }
 
+        // Get or create pharmacist profile
+        $profile = PharmacistProfile::where('user_id', $user->id)->first();
+        if (!$profile) {
+            $profile = PharmacistProfile::create(['user_id' => $user->id]);
+        }
+
         $pharmacistData = [
+            'id' => $user->id,
             'name' => $user->name,
-            'surname' => $user->surname ?? '',
-            'idNumber' => $user->id_number ?? 'N/A',
-            'cellphoneNumber' => $user->phone_number ?? 'N/A',
-            'emailAddress' => $user->email,
-            'healthCouncilRegistrationNumber' => $user->registration_number ?? 'N/A',
-            'registrationDate' => $user->registration_date ? Carbon::parse($user->registration_date)->format('Y-m-d') : 'N/A',
+            'email' => $user->email,
+            'surname' => $profile->surname ?? '',
+            'id_number' => $profile->id_number ?? '',
+            'phone_number' => $profile->phone_number ?? '',
+            'registration_number' => $profile->registration_number ?? '',
+            'registration_date' => $profile->registration_date ? Carbon::parse($profile->registration_date)->format('Y-m-d') : '',
+            'bio' => $profile->bio ?? '',
+            'avatar' => $profile->avatar ?? null,
+            'specializations' => $profile->specializations ?? [],
+            'certifications' => $profile->certifications ?? [],
+            'qualification' => $profile->qualification ?? '',
+            'university' => $profile->university ?? '',
+            'graduation_year' => $profile->graduation_year ?? null,
+            'years_experience' => $profile->years_experience ?? 0,
+            'languages' => $profile->languages ?? [],
+            'license_status' => $profile->license_status ?? 'active',
+            'license_expiry' => $profile->license_expiry ? Carbon::parse($profile->license_expiry)->format('Y-m-d') : '',
         ];
 
         return Inertia::render('Pharmacist/EditProfile', [
             'pharmacist' => $pharmacistData,
+            'specialization_options' => [
+                'Clinical Pharmacy',
+                'Hospital Pharmacy',
+                'Community Pharmacy',
+                'Industrial Pharmacy',
+                'Regulatory Affairs',
+                'Pharmaceutical Research',
+                'Pharmacovigilance',
+                'Nuclear Pharmacy',
+                'Oncology Pharmacy',
+                'Pediatric Pharmacy',
+                'Geriatric Pharmacy',
+                'Mental Health Pharmacy'
+            ],
+            'language_options' => [
+                'English',
+                'Afrikaans',
+                'Zulu',
+                'Xhosa',
+                'Sotho',
+                'Tswana',
+                'Pedi',
+                'Venda',
+                'Tsonga',
+                'Ndebele',
+                'Swati'
+            ],
+            'license_status_options' => [
+                'active',
+                'expired',
+                'suspended',
+                'probation'
+            ]
         ]);
     }
 
@@ -434,25 +573,77 @@ class PharmacistPrescriptionController extends Controller
             return redirect()->route('login');
         }
 
+        // Debug: Log all request data
+        Log::info('All request data:', $request->all());
+
         $validatedData = $request->validate([
-            'name' => 'required|string|max:255',
             'surname' => 'nullable|string|max:255',
-            'idNumber' => 'nullable|string|max:255',
-            'cellphoneNumber' => 'nullable|string|max:255',
-            'emailAddress' => 'required|email|max:255|unique:users,email,' . $user->id,
-            'healthCouncilRegistrationNumber' => 'nullable|string|max:255',
-            'registrationDate' => 'nullable|date',
+            'id_number' => 'nullable|string|max:20',
+            'phone_number' => 'nullable|string|max:20',
+            'registration_number' => 'nullable|string|max:255',
+            'registration_date' => 'nullable|date',
+            'bio' => 'nullable|string|max:1000',
+            'specializations' => 'nullable|array',
+            'specializations.*' => 'string|max:255',
+            'certifications' => 'nullable|array',
+            'certifications.*' => 'string|max:255',
+            'qualification' => 'nullable|string|max:255',
+            'university' => 'nullable|string|max:255',
+            'graduation_year' => 'nullable|integer|min:1950|max:' . (date('Y') + 5),
+            'years_experience' => 'nullable|integer|min:0|max:60',
+            'languages' => 'nullable|array',
+            'languages.*' => 'string|max:255',
+            'license_status' => 'nullable|string|in:active,expired,suspended,probation',
+            'license_expiry' => 'nullable|date|after:today',
+            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        $user->name = $validatedData['name'];
-        $user->surname = $validatedData['surname'] ?? null;
-        $user->id_number = $validatedData['idNumber'] ?? null;
-        $user->phone_number = $validatedData['cellphoneNumber'] ?? null;
-        $user->email = $validatedData['emailAddress'];
-        $user->registration_number = $validatedData['healthCouncilRegistrationNumber'] ?? null;
-        $user->registration_date = $validatedData['registrationDate'] ?? null;
+        // Handle avatar upload
+        $avatarPath = null;
+        if ($request->hasFile('avatar')) {
+            $avatarPath = $request->file('avatar')->store('avatars', 'public');
+        }
 
-        $user->save();
+        // Get or create profile
+        $profile = PharmacistProfile::where('user_id', $user->id)->first();
+        if (!$profile) {
+            $profile = PharmacistProfile::create(['user_id' => $user->id]);
+        }
+
+        // Debug: Log the validated data
+        Log::info('Validated data for profile update:', $validatedData);
+
+        // Update profile data
+        $profileData = [
+            'surname' => $validatedData['surname'] ?? null,
+            'id_number' => $validatedData['id_number'] ?? null,
+            'phone_number' => $validatedData['phone_number'] ?? null,
+            'registration_number' => $validatedData['registration_number'] ?? null,
+            'registration_date' => $validatedData['registration_date'] ?? null,
+            'bio' => $validatedData['bio'] ?? null,
+            'specializations' => $validatedData['specializations'] ?? null,
+            'certifications' => $validatedData['certifications'] ?? null,
+            'qualification' => $validatedData['qualification'] ?? null,
+            'university' => $validatedData['university'] ?? null,
+            'graduation_year' => $validatedData['graduation_year'] ?? null,
+            'years_experience' => $validatedData['years_experience'] ?? null,
+            'languages' => $validatedData['languages'] ?? null,
+            'license_status' => $validatedData['license_status'] ?? 'active',
+            'license_expiry' => $validatedData['license_expiry'] ?? null,
+        ];
+
+        if ($avatarPath) {
+            $profileData['avatar'] = $avatarPath;
+        }
+
+        // Debug: Log the profile data before update
+        Log::info('Profile data to update:', $profileData);
+        Log::info('Profile before update:', $profile->toArray());
+
+        $profile->update($profileData);
+
+        // Debug: Log the profile after update
+        Log::info('Profile after update:', $profile->fresh()->toArray());
 
         return redirect()->route('pharmacist.profile')->with('success', 'Profile updated successfully.');
     }

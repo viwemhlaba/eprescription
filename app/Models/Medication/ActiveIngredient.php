@@ -23,6 +23,15 @@ class ActiveIngredient extends Model
 
     public function medications()
     {
-        return $this->hasMany(Medication::class);
+        return $this->belongsToMany(Medication::class, 'active_ingredient_medication')
+            ->withPivot('strength');
+    }
+
+    /**
+     * Get customers who are allergic to this active ingredient
+     */
+    public function allergicCustomers()
+    {
+        return $this->hasMany(\App\Models\CustomerAllergy::class);
     }
 }

@@ -1,4 +1,3 @@
-import { Inertia } from '@inertiajs/inertia';
 import { useState } from 'react';
 
 export default function Edit({ medication, dosageForms = [], suppliers = [], activeIngredients = [] }) {

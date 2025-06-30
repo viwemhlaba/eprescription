@@ -1,60 +1,455 @@
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import AppLayout from '@/layouts/app-layout'; // Assuming you use AppLayout for your main structure
-import { Head, Link } from '@inertiajs/react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import AppLayout from '@/layouts/app-layout';
+import { Head, Link, useForm } from '@inertiajs/react';
+import { Plus, Upload, X } from 'lucide-react';
+import { FormEventHandler, useRef, useState } from 'react';
 
 // Define the type for the pharmacist data coming from props
 interface PharmacistData {
+    id: number;
     name: string;
-    surname: string;
-    idNumber: string;
-    cellphoneNumber: string;
-    emailAddress: string;
-    healthCouncilRegistrationNumber: string;
-    registrationDate: string;
+    email: string;
+    surname?: string;
+    id_number?: string;
+    phone_number?: string;
+    registration_number?: string;
+    registration_date?: string;
+    bio?: string;
+    avatar?: string;
+    specializations?: string[];
+    certifications?: string[];
+    qualification?: string;
+    university?: string;
+    graduation_year?: number;
+    years_experience?: number;
+    languages?: string[];
+    license_status?: string;
+    license_expiry?: string;
 }
 
 // Define the props interface for the component
 interface EditProfileProps {
     pharmacist: PharmacistData;
+    specialization_options: string[];
+    language_options: string[];
+    license_status_options: string[];
 }
 
-const EditProfile = ({ pharmacist }: EditProfileProps) => {
-    // You'll typically use Inertia's useForm hook here to manage form state and submission
-    // For now, we'll just display the data read-only.
+const EditProfile = ({ pharmacist, specialization_options, language_options, license_status_options }: EditProfileProps) => {
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+    const { data, setData, post, processing, errors } = useForm({
+        // Note: name and email are not included in form data since they cannot be updated
+        surname: pharmacist.surname || '',
+        id_number: pharmacist.id_number || '',
+        phone_number: pharmacist.phone_number || '',
+        registration_number: pharmacist.registration_number || '',
+        registration_date: pharmacist.registration_date || '',
+        bio: pharmacist.bio || '',
+        specializations: pharmacist.specializations || [],
+        certifications: pharmacist.certifications || [],
+        qualification: pharmacist.qualification || '',
+        university: pharmacist.university || '',
+        graduation_year: pharmacist.graduation_year || '',
+        years_experience: pharmacist.years_experience || 0,
+        languages: pharmacist.languages || [],
+        license_status: pharmacist.license_status || 'active',
+        license_expiry: pharmacist.license_expiry || '',
+        avatar: null as File | null,
+    });
+    const handleSubmit: FormEventHandler = (e) => {
+        e.preventDefault();
+
+        // Debug: Log what we're sending
+        console.log('Form data being sent:', data);
+
+        // Temporarily use POST to test if PUT is the issue
+        post(route('pharmacist.profile.update.post'), {
+            onSuccess: () => {
+                console.log('Update successful');
+            },
+            onError: (errors: Record<string, string>) => {
+                console.log('Update errors:', errors);
+            },
+        });
+    };
+
+    const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setData('avatar', file);
+            const url = URL.createObjectURL(file);
+            setPreviewUrl(url);
+        }
+    };
+
+    const addSpecialization = (specialization: string) => {
+        if (!data.specializations.includes(specialization)) {
+            setData('specializations', [...data.specializations, specialization]);
+        }
+    };
+
+    const removeSpecialization = (index: number) => {
+        setData(
+            'specializations',
+            data.specializations.filter((_, i) => i !== index),
+        );
+    };
+
+    const addLanguage = (language: string) => {
+        if (!data.languages.includes(language)) {
+            setData('languages', [...data.languages, language]);
+        }
+    };
+
+    const removeLanguage = (index: number) => {
+        setData(
+            'languages',
+            data.languages.filter((_, i) => i !== index),
+        );
+    };
+
+    const addCertification = () => {
+        setData('certifications', [...data.certifications, '']);
+    };
+
+    const updateCertification = (index: number, value: string) => {
+        const newCertifications = [...data.certifications];
+        newCertifications[index] = value;
+        setData('certifications', newCertifications);
+    };
+
+    const removeCertification = (index: number) => {
+        setData(
+            'certifications',
+            data.certifications.filter((_, i) => i !== index),
+        );
+    };
 
     return (
         <AppLayout>
             <Head title="Edit Pharmacist Profile" />
             <div className="mx-auto max-w-4xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Edit Personal Details</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <p>This is the Edit Profile page. You will build your form here.</p>
-                        <p>
-                            Currently showing: {pharmacist.name} {pharmacist.surname}
-                        </p>
-                        {/* Example of how you might use input fields later */}
-                        {/*
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="editName">Name</Label>
-                                <Input id="editName" value={pharmacist.name} onChange={(e) => {}} />
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Avatar Section */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Profile Picture</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex items-center space-x-4">
+                                <Avatar className="h-20 w-20">
+                                    <AvatarImage src={previewUrl || pharmacist.avatar} alt={`${pharmacist.name} ${pharmacist.surname || ''}`} />
+                                    <AvatarFallback className="text-lg">
+                                        {pharmacist.name.charAt(0)}
+                                        {pharmacist.surname?.charAt(0) || ''}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                                        <Upload className="mr-2 h-4 w-4" />
+                                        Upload New Picture
+                                    </Button>
+                                    <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
+                                    <p className="text-muted-foreground mt-1 text-sm">JPG, PNG, GIF up to 2MB</p>
+                                    {errors.avatar && <p className="mt-1 text-sm text-red-600">{errors.avatar}</p>}
+                                </div>
                             </div>
-                            // ... other input fields
-                        </div>
-                        */}
-                    </CardContent>
-                </Card>
-                <div className="flex justify-end gap-2">
-                    <Button variant="outline" asChild>
-                        <Link href={route('pharmacist.profile')}>Cancel</Link>
-                    </Button>
-                    {/* You'd have a submit button here once you implement the form */}
-                    {/* <Button type="submit">Save Changes</Button> */}
-                </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Personal Details */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Personal Details</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                <div className="space-y-2">
+                                    <Label htmlFor="name">Name *</Label>
+                                    <Input
+                                        id="name"
+                                        value={pharmacist.name}
+                                        readOnly
+                                        disabled
+                                        className="cursor-not-allowed bg-gray-50 text-gray-500"
+                                    />
+                                    <p className="text-xs text-gray-500">Name cannot be changed</p>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="surname">Surname</Label>
+                                    <Input id="surname" value={data.surname} onChange={(e) => setData('surname', e.target.value)} />
+                                    {errors.surname && <p className="text-sm text-red-600">{errors.surname}</p>}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="email">Email Address *</Label>
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        value={pharmacist.email}
+                                        readOnly
+                                        disabled
+                                        className="cursor-not-allowed bg-gray-50 text-gray-500"
+                                    />
+                                    <p className="text-xs text-gray-500">Email cannot be changed</p>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="phone_number">Phone Number</Label>
+                                    <Input id="phone_number" value={data.phone_number} onChange={(e) => setData('phone_number', e.target.value)} />
+                                    {errors.phone_number && <p className="text-sm text-red-600">{errors.phone_number}</p>}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="id_number">ID Number</Label>
+                                    <Input id="id_number" value={data.id_number} onChange={(e) => setData('id_number', e.target.value)} />
+                                    {errors.id_number && <p className="text-sm text-red-600">{errors.id_number}</p>}
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="bio">Bio</Label>
+                                <Textarea
+                                    id="bio"
+                                    value={data.bio}
+                                    onChange={(e) => setData('bio', e.target.value)}
+                                    rows={3}
+                                    placeholder="Tell us about yourself..."
+                                />
+                                {errors.bio && <p className="text-sm text-red-600">{errors.bio}</p>}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Professional Details */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Professional Details</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                <div className="space-y-2">
+                                    <Label htmlFor="registration_number">Registration Number</Label>
+                                    <Input
+                                        id="registration_number"
+                                        value={data.registration_number}
+                                        onChange={(e) => setData('registration_number', e.target.value)}
+                                    />
+                                    {errors.registration_number && <p className="text-sm text-red-600">{errors.registration_number}</p>}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="registration_date">Registration Date</Label>
+                                    <Input
+                                        id="registration_date"
+                                        type="date"
+                                        value={data.registration_date}
+                                        onChange={(e) => setData('registration_date', e.target.value)}
+                                    />
+                                    {errors.registration_date && <p className="text-sm text-red-600">{errors.registration_date}</p>}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="qualification">Qualification</Label>
+                                    <Input
+                                        id="qualification"
+                                        value={data.qualification}
+                                        onChange={(e) => setData('qualification', e.target.value)}
+                                        placeholder="e.g., Bachelor of Pharmacy"
+                                    />
+                                    {errors.qualification && <p className="text-sm text-red-600">{errors.qualification}</p>}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="university">University</Label>
+                                    <Input id="university" value={data.university} onChange={(e) => setData('university', e.target.value)} />
+                                    {errors.university && <p className="text-sm text-red-600">{errors.university}</p>}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="graduation_year">Graduation Year</Label>
+                                    <Input
+                                        id="graduation_year"
+                                        type="number"
+                                        min="1950"
+                                        max={new Date().getFullYear() + 5}
+                                        value={data.graduation_year}
+                                        onChange={(e) => setData('graduation_year', parseInt(e.target.value) || '')}
+                                    />
+                                    {errors.graduation_year && <p className="text-sm text-red-600">{errors.graduation_year}</p>}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="years_experience">Years of Experience</Label>
+                                    <Input
+                                        id="years_experience"
+                                        type="number"
+                                        min="0"
+                                        max="60"
+                                        value={data.years_experience}
+                                        onChange={(e) => setData('years_experience', parseInt(e.target.value) || 0)}
+                                    />
+                                    {errors.years_experience && <p className="text-sm text-red-600">{errors.years_experience}</p>}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="license_status">License Status</Label>
+                                    <Select value={data.license_status} onValueChange={(value) => setData('license_status', value)}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select license status" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {license_status_options.map((status) => (
+                                                <SelectItem key={status} value={status}>
+                                                    {status.charAt(0).toUpperCase() + status.slice(1)}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {errors.license_status && <p className="text-sm text-red-600">{errors.license_status}</p>}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="license_expiry">License Expiry Date</Label>
+                                    <Input
+                                        id="license_expiry"
+                                        type="date"
+                                        value={data.license_expiry}
+                                        onChange={(e) => setData('license_expiry', e.target.value)}
+                                    />
+                                    {errors.license_expiry && <p className="text-sm text-red-600">{errors.license_expiry}</p>}
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Specializations */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Specializations</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex flex-wrap gap-2">
+                                {data.specializations.map((spec, index) => (
+                                    <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                                        {spec}
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-muted-foreground hover:text-foreground h-auto p-0"
+                                            onClick={() => removeSpecialization(index)}
+                                        >
+                                            <X className="h-3 w-3" />
+                                        </Button>
+                                    </Badge>
+                                ))}
+                            </div>
+                            <Select onValueChange={addSpecialization}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Add a specialization" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {specialization_options
+                                        .filter((spec) => !data.specializations.includes(spec))
+                                        .map((spec) => (
+                                            <SelectItem key={spec} value={spec}>
+                                                {spec}
+                                            </SelectItem>
+                                        ))}
+                                </SelectContent>
+                            </Select>
+                            {errors.specializations && <p className="text-sm text-red-600">{errors.specializations}</p>}
+                        </CardContent>
+                    </Card>
+
+                    {/* Languages */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Languages</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex flex-wrap gap-2">
+                                {data.languages.map((lang, index) => (
+                                    <Badge key={index} variant="outline" className="flex items-center gap-1">
+                                        {lang}
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-muted-foreground hover:text-foreground h-auto p-0"
+                                            onClick={() => removeLanguage(index)}
+                                        >
+                                            <X className="h-3 w-3" />
+                                        </Button>
+                                    </Badge>
+                                ))}
+                            </div>
+                            <Select onValueChange={addLanguage}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Add a language" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {language_options
+                                        .filter((lang) => !data.languages.includes(lang))
+                                        .map((lang) => (
+                                            <SelectItem key={lang} value={lang}>
+                                                {lang}
+                                            </SelectItem>
+                                        ))}
+                                </SelectContent>
+                            </Select>
+                            {errors.languages && <p className="text-sm text-red-600">{errors.languages}</p>}
+                        </CardContent>
+                    </Card>
+
+                    {/* Certifications */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Certifications</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {data.certifications.map((cert, index) => (
+                                <div key={index} className="flex items-center space-x-2">
+                                    <Input
+                                        value={cert}
+                                        onChange={(e) => updateCertification(index, e.target.value)}
+                                        placeholder="Enter certification name"
+                                        className="flex-1"
+                                    />
+                                    <Button type="button" variant="outline" size="sm" onClick={() => removeCertification(index)}>
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            ))}
+                            <Button type="button" variant="outline" onClick={addCertification} className="w-full">
+                                <Plus className="mr-2 h-4 w-4" />
+                                Add Certification
+                            </Button>
+                            {errors.certifications && <p className="text-sm text-red-600">{errors.certifications}</p>}
+                        </CardContent>
+                    </Card>
+
+                    {/* Form Actions */}
+                    <div className="flex justify-end gap-2">
+                        <Button variant="outline" type="button" asChild>
+                            <Link href={route('pharmacist.profile')}>Cancel</Link>
+                        </Button>
+                        <Button type="submit" disabled={processing}>
+                            {processing ? 'Saving...' : 'Save Changes'}
+                        </Button>
+                    </div>
+                </form>
             </div>
         </AppLayout>
     );

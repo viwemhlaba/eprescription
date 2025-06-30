@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\Customer\PrescriptionItem;
+use App\Models\User;
 use Database\Factories\MedicationFactory;
 
 class Medication extends Model
@@ -67,4 +68,26 @@ class Medication extends Model
         $this->update(['quantity_on_hand' => $amount]);
     }
 
+    /**
+     * Check if this medication conflicts with a customer's allergies
+     */
+    public function hasAllergyConflictsWith(User $customer)
+    {
+        $medicationIngredients = $this->activeIngredients()->pluck('active_ingredients.id');
+        
+        return $customer->allergies()
+            ->whereIn('active_ingredient_id', $medicationIngredients)
+            ->exists();
+    }
+
+    /**
+     * Get specific allergy conflicts for a customer
+     */
+    public function getAllergyConflictsWith(User $customer)
+    {
+        $medicationIngredients = $this->activeIngredients;
+        $customerAllergies = $customer->getAllergicActiveIngredients;
+        
+        return $medicationIngredients->intersect($customerAllergies);
+    }
 }

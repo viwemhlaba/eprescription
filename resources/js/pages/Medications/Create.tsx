@@ -1,4 +1,3 @@
-import { Inertia } from '@inertiajs/inertia';
 import { useState } from 'react';
 
 export default function Create({ dosageForms = [], suppliers = [], activeIngredients = [] }) {

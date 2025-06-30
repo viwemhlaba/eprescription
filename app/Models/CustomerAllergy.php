@@ -4,28 +4,26 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\ActiveIngredient; // Ensure this path is correct or update it to the correct namespace
-use App\Models\User; // Assuming you have a User model for customers
+use App\Models\Medication\ActiveIngredient;
+use App\Models\User;
 
 class CustomerAllergy extends Model
 {
     use HasFactory;
 
-    // Define the table name if it's not the plural form of the model name
-    // protected $table = 'customer_allergies';
+    protected $table = 'customer_allergies';
 
     protected $fillable = [
-        'customer_id',
+        'user_id',
         'active_ingredient_id',
-        // Add any other fields you have in your customer_allergies table
     ];
 
     /**
-     * Get the customer that owns the allergy.
+     * Get the user (customer) that owns the allergy.
      */
-    public function customer()
+    public function user()
     {
-        return $this->belongsTo(User::class, 'customer_id'); // Assuming 'users' table is for customers
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     /**
@@ -33,6 +31,6 @@ class CustomerAllergy extends Model
      */
     public function activeIngredient()
     {
-        return $this->belongsTo(ActiveIngredient::class); // Assuming you have an ActiveIngredient model
+        return $this->belongsTo(ActiveIngredient::class);
     }
 }
