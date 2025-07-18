@@ -18,6 +18,7 @@
         "tightenco/ziggy": "^2.4"
     },
     "require-dev": {
+        "beyondcode/laravel-dump-server": "^2.1",
         "fakerphp/faker": "^1.23",
         "friendsofphp/php-cs-fixer": "^3.75",
         "laravel/pail": "^1.2.2",

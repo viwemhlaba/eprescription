@@ -61,11 +61,19 @@ class PharmacistReportController extends Controller
                 'group_by' => 'required|in:patient,medication,schedule'
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
-            // For GET requests, show a simple error page or redirect
-            return response()->view('errors.validation', [
-                'errors' => $e->errors(),
-                'message' => 'Invalid report parameters provided.'
-            ], 422);
+            // If request expects JSON (from AJAX), return JSON response
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid report parameters provided.',
+                    'errors' => $e->errors()
+                ], 422);
+            }
+            
+            // For regular requests, redirect back with validation errors
+            return redirect()->route('pharmacist.reports.dispensed')
+                ->withErrors($e->errors())
+                ->withInput();
         }
 
         $pharmacistId = Auth::id();
@@ -87,11 +95,24 @@ class PharmacistReportController extends Controller
 
         // Check if no data found
         if ($dispensedItems->isEmpty()) {
-            return response()->view('errors.no-data', [
-                'message' => 'No dispensed medications found for the selected date range.',
-                'details' => 'Please try a different date range or verify that you have dispensed medications during this period.',
-                'back_url' => route('pharmacist.reports.dispensed')
-            ], 422);
+            // If request expects JSON (from AJAX), return JSON response
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No dispensed medications found for the selected date range.',
+                    'details' => 'Please try a different date range or verify that you have dispensed medications during this period.',
+                    'data' => [
+                        'start_date' => $validated['start_date'],
+                        'end_date' => $validated['end_date'],
+                        'group_by' => $validated['group_by'],
+                        'pharmacist_name' => $pharmacist->name . ' ' . $pharmacist->surname
+                    ]
+                ], 404);
+            }
+            
+            // For regular requests, redirect back with error message
+            return redirect()->route('pharmacist.reports.dispensed')
+                ->with('error', 'No dispensed medications found for the selected date range. Please try a different date range.');
         }
 
         // Group the data based on selected grouping method

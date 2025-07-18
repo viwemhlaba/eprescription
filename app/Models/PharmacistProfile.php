@@ -12,6 +12,7 @@ class PharmacistProfile extends Model
 
     protected $fillable = [
         'user_id',
+        'pharmacy_id',
         'surname',
         'id_number',
         'phone_number',
@@ -28,6 +29,7 @@ class PharmacistProfile extends Model
         'languages',
         'license_status',
         'license_expiry',
+        'profile_completed',
     ];
 
     protected $casts = [
@@ -38,6 +40,7 @@ class PharmacistProfile extends Model
         'license_expiry' => 'datetime',
         'graduation_year' => 'integer',
         'years_experience' => 'integer',
+        'profile_completed' => 'boolean',
     ];
 
     /**
@@ -46,6 +49,14 @@ class PharmacistProfile extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the pharmacy that the pharmacist works at
+     */
+    public function pharmacy()
+    {
+        return $this->belongsTo(Pharmacy::class);
     }
 
     /**

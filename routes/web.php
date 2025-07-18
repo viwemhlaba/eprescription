@@ -5,6 +5,7 @@ use Inertia\Inertia;
 use App\Http\Controllers\Customer\PrescriptionController;
 use App\Http\Controllers\Pharmacist\PharmacistPrescriptionController;
 use App\Http\Controllers\Pharmacist\PharmacistReportController;
+use App\Http\Controllers\Pharmacist\PharmacistStockController;
 use App\Http\Controllers\DoctorController;
 use App\Http\Controllers\Manager\ActiveIngredientController; // Add this line
 use App\Http\Controllers\Manager\DosageFormController; // Add this line
@@ -32,13 +33,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 
 
-Route::middleware(['auth', 'role:pharmacist'])->prefix('pharmacist')->name('pharmacist.')->group(function () {
+Route::middleware(['auth', 'role:pharmacist', 'pharmacist.onboarding'])->prefix('pharmacist')->name('pharmacist.')->group(function () {
     // Consolidated Dashboard Route
     Route::get('/dashboard', [PharmacistPrescriptionController::class, 'dashboard'])->name('dashboard');
 
 
     // Prescription Routes
     Route::get('/prescriptions', [PharmacistPrescriptionController::class, 'index'])->name('prescriptions.index');
+    
+    // Manual Prescription Creation Routes (MUST be before general create route)
+    Route::get('/prescriptions/create-manual', [PharmacistPrescriptionController::class, 'createManual'])->name('prescriptions.createManual');
+    Route::post('/prescriptions/create-manual', [PharmacistPrescriptionController::class, 'storeManual'])->name('prescriptions.storeManual');
+    
+    // Manual Prescription Management Routes
+    Route::get('/prescriptions/manual/{prescription}/edit', [PharmacistPrescriptionController::class, 'editManual'])->name('prescriptions.manual.edit');
+    Route::put('/prescriptions/manual/{prescription}', [PharmacistPrescriptionController::class, 'updateManual'])->name('prescriptions.manual.update');
+    Route::delete('/prescriptions/manual/{prescription}', [PharmacistPrescriptionController::class, 'destroyManual'])->name('prescriptions.manual.destroy');
+    Route::get('/prescriptions/manual/{prescription}/generate-pdf', [PharmacistPrescriptionController::class, 'generatePdf'])->name('prescriptions.manual.generatePdf');
+    
     Route::get('/prescriptions/load/{prescription}', [PharmacistPrescriptionController::class, 'load'])->name('prescriptions.load');
     Route::get('/prescriptions/create/{prescription}', [PharmacistPrescriptionController::class, 'create'])->name('prescriptions.create');
     Route::post('/prescriptions', [PharmacistPrescriptionController::class, 'store'])->name('prescriptions.store');
@@ -66,13 +78,20 @@ Route::middleware(['auth', 'role:pharmacist'])->prefix('pharmacist')->name('phar
 
     Route::get('/prescriptions/{prescription}', [PharmacistPrescriptionController::class, 'showPrescription'])
         ->name('prescriptions.show');
+    
+    Route::get('/prescriptions/{prescription}/download', [PharmacistPrescriptionController::class, 'downloadPrescription'])
+        ->name('prescriptions.download');
 
     // Doctor Routes (if needed)
     Route::post('/doctors', [DoctorController::class, 'store'])->name('doctors.store');
 
+    // Customer Creation Routes for walk-in patients
+    Route::get('/customers/create', [PharmacistPrescriptionController::class, 'createCustomer'])->name('customers.create');
+    Route::post('/customers', [PharmacistPrescriptionController::class, 'storeCustomer'])->name('customers.store');
+
     // Other Pharmacist Routes
     Route::get('/repeats', fn () => Inertia::render('Pharmacist/Repeats'))->name('repeats');
-    Route::get('/stock', fn () => Inertia::render('Pharmacist/Stock'))->name('stock');
+    Route::get('/stock', [PharmacistStockController::class, 'index'])->name('stock');
     
     // Reports Routes
     Route::get('/reports', [PharmacistReportController::class, 'index'])->name('reports');

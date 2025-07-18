@@ -13,7 +13,7 @@ interface ReportFormData {
     start_date: string;
     end_date: string;
     group_by: string;
-    [key: string]: any;
+    [key: string]: string;
 }
 
 export default function DispensedReportPage() {
@@ -50,19 +50,67 @@ export default function DispensedReportPage() {
 
             const url = route('pharmacist.reports.dispensed-pdf') + '?' + queryParams.toString();
 
-            // Create a temporary link and click it to trigger download
+            // First, make a request to check if data exists
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+
+            if (!response.ok) {
+                // Handle error responses
+                const errorData = await response.json();
+
+                if (response.status === 404) {
+                    // No data found
+                    toast.error(errorData.message, {
+                        description: errorData.details,
+                        duration: 5000,
+                    });
+                } else if (response.status === 422) {
+                    // Validation errors
+                    toast.error(errorData.message, {
+                        description: 'Please check your input parameters and try again.',
+                        duration: 5000,
+                    });
+                } else {
+                    // Other errors
+                    toast.error('Failed to generate report', {
+                        description: 'An unexpected error occurred. Please try again.',
+                        duration: 5000,
+                    });
+                }
+                return;
+            }
+
+            // If we get here, the response was successful and contains PDF data
+            const blob = await response.blob();
+
+            // Create download link
+            const downloadUrl = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
-            link.href = url;
-            link.target = '_blank';
+            link.href = downloadUrl;
+            link.download = `dispensed-medications-report-${data.start_date}-to-${data.end_date}.pdf`;
             link.style.display = 'none';
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
 
-            toast.success('PDF report is being generated and will download shortly');
+            // Clean up the blob URL
+            window.URL.revokeObjectURL(downloadUrl);
+
+            toast.success('PDF report generated successfully', {
+                description: 'Your report has been downloaded.',
+                duration: 3000,
+            });
         } catch (error) {
-            toast.error('Failed to generate PDF report. Please try again.');
             console.error('PDF generation error:', error);
+            toast.error('Failed to generate PDF report', {
+                description: 'Please check your connection and try again.',
+                duration: 5000,
+            });
         } finally {
             setIsGenerating(false);
         }
@@ -176,8 +224,12 @@ export default function DispensedReportPage() {
                                                     The report will include: dispensed date, medication name, quantity, patient details, doctor name,
                                                     and schedule
                                                 </li>
-                                                <li>PDF will be generated and downloaded automatically</li>
-                                                <li>If no data is found for the selected date range, you will be notified</li>
+                                                <li>PDF will be generated and downloaded automatically if data is found</li>
+                                                <li>
+                                                    If no data is found for the selected date range, you'll see a helpful message without leaving this
+                                                    page
+                                                </li>
+                                                <li>Try adjusting your date range if you don't see expected results</li>
                                             </ul>
                                         </div>
                                     </div>

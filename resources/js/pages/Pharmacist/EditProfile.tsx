@@ -32,17 +32,32 @@ interface PharmacistData {
     languages?: string[];
     license_status?: string;
     license_expiry?: string;
+    pharmacy_id?: number;
+    profile_completed?: boolean;
+    pharmacy?: {
+        id: number;
+        name: string;
+        physical_address?: string;
+    };
+}
+
+// Define the pharmacy interface
+interface Pharmacy {
+    id: number;
+    name: string;
+    physical_address?: string;
 }
 
 // Define the props interface for the component
 interface EditProfileProps {
     pharmacist: PharmacistData;
+    pharmacies: Pharmacy[];
     specialization_options: string[];
     language_options: string[];
     license_status_options: string[];
 }
 
-const EditProfile = ({ pharmacist, specialization_options, language_options, license_status_options }: EditProfileProps) => {
+const EditProfile = ({ pharmacist, pharmacies, specialization_options, language_options, license_status_options }: EditProfileProps) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -63,6 +78,7 @@ const EditProfile = ({ pharmacist, specialization_options, language_options, lic
         languages: pharmacist.languages || [],
         license_status: pharmacist.license_status || 'active',
         license_expiry: pharmacist.license_expiry || '',
+        pharmacy_id: pharmacist.pharmacy_id ? pharmacist.pharmacy_id.toString() : 'none',
         avatar: null as File | null,
     });
     const handleSubmit: FormEventHandler = (e) => {
@@ -136,8 +152,34 @@ const EditProfile = ({ pharmacist, specialization_options, language_options, lic
 
     return (
         <AppLayout>
-            <Head title="Edit Pharmacist Profile" />
+            <Head title={!pharmacist.profile_completed ? 'Complete Your Profile' : 'Edit Pharmacist Profile'} />
             <div className="mx-auto max-w-4xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+                {!pharmacist.profile_completed && (
+                    <Card className="border-blue-200 bg-blue-50">
+                        <CardContent className="pt-6">
+                            <div className="flex items-center space-x-3">
+                                <div className="flex-shrink-0">
+                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
+                                        <svg className="h-5 w-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                            <path
+                                                fillRule="evenodd"
+                                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                                clipRule="evenodd"
+                                            />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-medium text-blue-900">Welcome to the e-Prescription System!</h3>
+                                    <p className="text-blue-800">
+                                        Please complete your profile to get started. This information helps us provide you with the best experience
+                                        and ensures proper identification.
+                                    </p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {/* Avatar Section */}
                     <Card>
@@ -329,6 +371,27 @@ const EditProfile = ({ pharmacist, specialization_options, language_options, lic
                                     />
                                     {errors.license_expiry && <p className="text-sm text-red-600">{errors.license_expiry}</p>}
                                 </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="pharmacy_id">Assigned Pharmacy</Label>
+                                    <Select value={data.pharmacy_id} onValueChange={(value) => setData('pharmacy_id', value)}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select a pharmacy" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="none">No pharmacy assigned</SelectItem>
+                                            {pharmacies.map((pharmacy) => (
+                                                <SelectItem key={pharmacy.id} value={pharmacy.id.toString()}>
+                                                    {pharmacy.name}
+                                                    {pharmacy.physical_address && (
+                                                        <span className="block text-sm text-gray-500">{pharmacy.physical_address}</span>
+                                                    )}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {errors.pharmacy_id && <p className="text-sm text-red-600">{errors.pharmacy_id}</p>}
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
@@ -442,11 +505,13 @@ const EditProfile = ({ pharmacist, specialization_options, language_options, lic
 
                     {/* Form Actions */}
                     <div className="flex justify-end gap-2">
-                        <Button variant="outline" type="button" asChild>
-                            <Link href={route('pharmacist.profile')}>Cancel</Link>
-                        </Button>
+                        {pharmacist.profile_completed && (
+                            <Button variant="outline" type="button" asChild>
+                                <Link href={route('pharmacist.profile')}>Cancel</Link>
+                            </Button>
+                        )}
                         <Button type="submit" disabled={processing}>
-                            {processing ? 'Saving...' : 'Save Changes'}
+                            {processing ? 'Saving...' : !pharmacist.profile_completed ? 'Complete Profile & Get Started' : 'Save Changes'}
                         </Button>
                     </div>
                 </form>

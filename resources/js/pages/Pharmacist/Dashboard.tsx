@@ -96,6 +96,14 @@ const PharmacistDashboard = ({ pharmacistName, metrics, recentActivities }: Phar
                         <Button variant="default" className="bg-white text-black hover:bg-gray-200" asChild>
                             <Link href={route('pharmacist.prescriptions.index', { status: 'pending' })}>View Pending Prescriptions</Link>
                         </Button>
+
+                        <Button variant="outline" className="border-blue-500 text-blue-500 hover:bg-blue-50" asChild>
+                            <Link href={route('pharmacist.customers.create')}>Create Customer Account</Link>
+                        </Button>
+
+                        <Button variant="outline" className="border-green-500 text-green-500 hover:bg-green-50" asChild>
+                            <Link href={route('pharmacist.prescriptions.createManual')}>Create Manual Prescription</Link>
+                        </Button>
                     </CardContent>
                 </Card>
 

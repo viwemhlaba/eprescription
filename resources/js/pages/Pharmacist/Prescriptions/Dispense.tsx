@@ -1,5 +1,4 @@
 import Heading from '@/components/heading';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -34,17 +33,6 @@ export default function DispensePrescription({ prescriptions }: { prescriptions:
                 p.customer_name?.toLowerCase().includes(filter.toLowerCase()) ||
                 p.patient_id_number?.toLowerCase().includes(filter.toLowerCase())),
     );
-
-    const getBadgeVariant = (status: string) => {
-        switch (status.toLowerCase()) {
-            case 'approved':
-                return 'default';
-            case 'dispensed':
-                return 'secondary';
-            default:
-                return 'outline';
-        }
-    };
 
     const canDispense = (prescription: Prescription) => {
         return prescription.status === 'approved' && prescription.repeats_used < prescription.repeats_total;
@@ -88,7 +76,6 @@ export default function DispensePrescription({ prescriptions }: { prescriptions:
                                             <TableHead>Patient</TableHead>
                                             <TableHead>Prescription</TableHead>
                                             <TableHead>Patient ID</TableHead>
-                                            <TableHead>Status</TableHead>
                                             <TableHead>Repeats</TableHead>
                                             <TableHead>Upload Date</TableHead>
                                             <TableHead>Actions</TableHead>
@@ -100,11 +87,6 @@ export default function DispensePrescription({ prescriptions }: { prescriptions:
                                                 <TableCell className="font-medium">{prescription.customer_name || 'Unknown'}</TableCell>
                                                 <TableCell>{prescription.prescription_name || 'N/A'}</TableCell>
                                                 <TableCell>{prescription.patient_id_number || 'N/A'}</TableCell>
-                                                <TableCell>
-                                                    <Badge variant={getBadgeVariant(prescription.status)}>
-                                                        {prescription.status.charAt(0).toUpperCase() + prescription.status.slice(1)}
-                                                    </Badge>
-                                                </TableCell>
                                                 <TableCell>
                                                     <div className="text-sm">
                                                         <div>

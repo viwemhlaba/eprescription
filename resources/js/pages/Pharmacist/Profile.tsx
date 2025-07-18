@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link } from '@inertiajs/react';
-import { AlertTriangle, Award, BookOpen, Calendar, Globe, Mail, Phone, User } from 'lucide-react';
+import { AlertTriangle, Award, BookOpen, Building, Calendar, Globe, Mail, Phone, User } from 'lucide-react';
 
 // Define the type for pharmacist data from the controller
 interface PharmacistData {
@@ -31,6 +31,15 @@ interface PharmacistData {
     license_expiring_soon?: boolean;
     years_since_registration?: number;
     created_at: string;
+    pharmacy?: {
+        id: number;
+        name: string;
+        health_council_registration_number?: string;
+        physical_address?: string;
+        contact_number?: string;
+        email?: string;
+        website_url?: string;
+    } | null;
 }
 
 interface Statistics {
@@ -254,6 +263,94 @@ const PharmacistProfile = ({ pharmacist, statistics }: PharmacistProfileProps) =
                                 </div>
                             </CardContent>
                         </Card>
+
+                        {/* Pharmacy Details */}
+                        {pharmacist.pharmacy && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center space-x-2">
+                                        <Building className="h-5 w-5" />
+                                        <span>Pharmacy Details</span>
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="pharmacyName">Pharmacy Name</Label>
+                                            <div id="pharmacyName" className="text-sm font-medium">
+                                                {pharmacist.pharmacy.name}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label htmlFor="pharmacyRegistration">Health Council Registration</Label>
+                                            <div id="pharmacyRegistration" className="text-sm font-medium">
+                                                {pharmacist.pharmacy.health_council_registration_number || 'Not provided'}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label htmlFor="pharmacyAddress">Physical Address</Label>
+                                            <div id="pharmacyAddress" className="text-sm font-medium">
+                                                {pharmacist.pharmacy.physical_address || 'Not provided'}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label htmlFor="pharmacyContact">Contact Number</Label>
+                                            <div id="pharmacyContact" className="text-sm font-medium">
+                                                {pharmacist.pharmacy.contact_number || 'Not provided'}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label htmlFor="pharmacyEmail" className="flex items-center space-x-1">
+                                                <Mail className="h-4 w-4" />
+                                                <span>Email Address</span>
+                                            </Label>
+                                            <div id="pharmacyEmail" className="text-sm font-medium">
+                                                {pharmacist.pharmacy.email || 'Not provided'}
+                                            </div>
+                                        </div>
+
+                                        {pharmacist.pharmacy.website_url && (
+                                            <div className="space-y-2">
+                                                <Label htmlFor="pharmacyWebsite" className="flex items-center space-x-1">
+                                                    <Globe className="h-4 w-4" />
+                                                    <span>Website</span>
+                                                </Label>
+                                                <div id="pharmacyWebsite" className="text-sm font-medium">
+                                                    <a
+                                                        href={pharmacist.pharmacy.website_url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-blue-600 hover:underline"
+                                                    >
+                                                        {pharmacist.pharmacy.website_url}
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {!pharmacist.pharmacy && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center space-x-2">
+                                        <Building className="h-5 w-5" />
+                                        <span>Pharmacy Details</span>
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <p className="text-muted-foreground text-sm">
+                                        No pharmacy assigned. Please contact your administrator to assign you to a pharmacy.
+                                    </p>
+                                </CardContent>
+                            </Card>
+                        )}
 
                         {/* Specializations & Languages */}
                         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">

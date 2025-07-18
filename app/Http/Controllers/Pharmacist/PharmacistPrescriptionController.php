@@ -9,6 +9,7 @@ use App\Models\Customer\PrescriptionItem;
 use App\Models\Doctor;
 use App\Models\User; // <--- Ensure User model is imported
 use App\Models\PharmacistProfile; // <--- Add PharmacistProfile import
+use App\Models\Pharmacy; // <--- Add Pharmacy import
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Mail\PrescriptionApprovedMail;
@@ -17,7 +18,10 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Hash; // <--- ADD THIS IMPORT for Hash facade
 use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf; // For DomPDF
 
 
 // Add this import for the Allergy model if you have one, or adjust as needed
@@ -25,13 +29,18 @@ use App\Models\CustomerAllergy;
 use App\Models\Medication\ActiveIngredient; // <--- ADD THIS IMPORT for ActiveIngredient
 use App\Models\DispensedItem;
 use App\Services\AllergyAlertService; // <--- ADD THIS IMPORT
+use App\Mail\CustomerAccountCreated; // <--- ADD THIS IMPORT for customer account creation
+use App\Models\Customer; // <--- ADD THIS IMPORT for Customer model
 
 class PharmacistPrescriptionController extends Controller
 {
     public function index()
     {
-        $prescriptions = Prescription::with('user') // eager load customer
+        // Get uploaded prescriptions (with file_path and status pending)
+        $uploadedPrescriptions = Prescription::with('user.customer') // eager load customer
             ->where('status', 'pending')
+            ->whereNotNull('file_path')
+            ->where('is_manual', false)
             ->latest()
             ->get()
             ->map(function ($prescription) {
@@ -46,11 +55,37 @@ class PharmacistPrescriptionController extends Controller
                     'repeats_used' => $prescription->repeats_used,
                     'next_repeat_date' => $prescription->next_repeat_date ? Carbon::parse($prescription->next_repeat_date)->format('Y-m-d') : null,
                     'delivery_method' => $prescription->delivery_method,
+                    'is_manual' => false,
+                    'patient_id_number' => $prescription->user->customer->id_number ?? $prescription->patient_id_number ?? 'Not Available',
+                ];
+            });
+
+        // Get manually created prescriptions (is_manual = true)
+        $manualPrescriptions = Prescription::with(['user.customer', 'doctor']) // eager load customer and doctor
+            ->where('is_manual', true)
+            ->latest()
+            ->get()
+            ->map(function ($prescription) {
+                return [
+                    'id' => $prescription->id,
+                    'customer_name' => $prescription->user->name ?? 'Unknown',
+                    'prescription_name' => $prescription->name,
+                    'created_date' => $prescription->created_at->format('Y-m-d'),
+                    'status' => $prescription->status,
+                    'file_path' => $prescription->file_path, // Will be null initially, populated when PDF is generated
+                    'repeats_total' => $prescription->repeats_total,
+                    'repeats_used' => $prescription->repeats_used,
+                    'next_repeat_date' => $prescription->next_repeat_date ? Carbon::parse($prescription->next_repeat_date)->format('Y-m-d') : null,
+                    'delivery_method' => $prescription->delivery_method,
+                    'doctor_name' => $prescription->doctor ? "Dr. {$prescription->doctor->name} {$prescription->doctor->surname}" : 'Unknown',
+                    'is_manual' => true,
+                    'patient_id_number' => $prescription->user->customer->id_number ?? $prescription->patient_id_number ?? 'Not Available',
                 ];
             });
 
         return inertia('Pharmacist/Prescriptions/Index', [
-            'prescriptions' => $prescriptions,
+            'uploadedPrescriptions' => $uploadedPrescriptions,
+            'manualPrescriptions' => $manualPrescriptions,
         ]);
     }
 
@@ -89,18 +124,38 @@ class PharmacistPrescriptionController extends Controller
             })->toArray();
         }
 
+        // For manual prescriptions, also fetch all customers for selection
+        $customers = [];
+        if ($prescription->is_manual ?? false) {
+            $customers = User::where('role', 'customer')
+                ->with('customer:user_id,id_number')
+                ->select('id', 'name', 'surname', 'email')
+                ->get()
+                ->map(function ($user) {
+                    return [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'surname' => $user->surname,
+                        'email' => $user->email,
+                        'id_number' => $user->customer->id_number ?? null,
+                        'full_name' => $user->name . ' ' . $user->surname,
+                    ];
+                });
+        }
+
         return inertia('Pharmacist/Prescriptions/LoadPrescription', [
             'prescription' => $prescription, // Pass the entire prescription object
             'doctors' => $doctors,
             'medications' => $medications,
             'customerAllergies' => $customerAllergies, // <--- MODIFIED: Pass the mapped allergies
-            'existingPrescriptionItems' => $prescription->items->map(function ($item) {
+            'customers' => $customers, // Pass customers for manual prescriptions
+            'existingPrescriptionItems' => $prescription->file_path ? $prescription->items->map(function ($item) {
                 return [
                     'medication_id' => $item->medication_id,
                     'quantity' => $item->quantity,
                     'instructions' => $item->instructions,
                 ];
-            }),
+            }) : [], // Only pass items if prescription has a file (uploaded prescription)
         ]);
     }
 
@@ -173,6 +228,7 @@ class PharmacistPrescriptionController extends Controller
     public function storeLoaded(Request $request, Prescription $prescription)
     {
         $validated = $request->validate([
+            'customer_id' => 'nullable|exists:users,id', // For manual prescriptions
             'patient_id_number' => 'required|string|max:255',
             'doctor_id' => 'required|exists:doctors,id',
             'repeats_total' => 'required|integer|min:0|max:99', // Add max limit for safety
@@ -189,14 +245,22 @@ class PharmacistPrescriptionController extends Controller
             return back()->withErrors(['status' => 'This prescription cannot be modified.']);
         }
 
-        $prescription->update([
+        // Update prescription with customer_id if it's a manual prescription
+        $updateData = [
             'patient_id_number' => $validated['patient_id_number'],
             'doctor_id' => $validated['doctor_id'],
             'status' => $validated['status'],
             'repeats_total' => $validated['repeats_total'],
             'repeats_used' => 0, // Reset repeats used
             'next_repeat_date' => null, // Clear next repeat date
-        ]);
+        ];
+
+        // For manual prescriptions, update the customer association
+        if ($prescription->is_manual && isset($validated['customer_id'])) {
+            $updateData['user_id'] = $validated['customer_id'];
+        }
+
+        $prescription->update($updateData);
 
         // Ensure $prescription->user is loaded before trying to access its email
         $prescription->loadMissing('user.allergies.activeIngredient');
@@ -289,14 +353,128 @@ class PharmacistPrescriptionController extends Controller
     public function showPrescription(Prescription $prescription)
     {
         $prescription->load([
-            'user',
+            'user.customer',
             'doctor',
-            'items.medication',
+            'items.medication.activeIngredients',
         ]);
 
+        // Get dispensed items history for this prescription
+        $dispensedHistory = DispensedItem::where('prescription_id', $prescription->id)
+            ->with(['pharmacist.pharmacistProfile.pharmacy', 'medication'])
+            ->orderBy('dispensed_at', 'desc')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'medication_name' => $item->medication->name,
+                    'quantity_dispensed' => (int) $item->quantity_dispensed,
+                    'cost' => (float) ($item->cost ?? 0),
+                    'dispensed_at' => $item->dispensed_at->format('Y-m-d H:i:s'),
+                    'dispensed_date' => $item->dispensed_at->format('M d, Y'),
+                    'dispensed_time' => $item->dispensed_at->format('h:i A'),
+                    'pharmacist_name' => $item->pharmacist->name ?? 'Unknown',
+                    'pharmacy_name' => $item->pharmacist->pharmacistProfile->pharmacy->name ?? 'Unknown Pharmacy',
+                    'notes' => $item->notes,
+                ];
+            });
+
+        // Calculate totals
+        $totalCost = $dispensedHistory->sum('cost');
+        $totalItemsDispensed = $dispensedHistory->sum('quantity_dispensed');
+
+        // Get current pharmacist info
+        $currentPharmacist = Auth::user();
+        $currentPharmacistProfile = null;
+        if ($currentPharmacist && $currentPharmacist->role === 'pharmacist') {
+            $currentPharmacistProfile = PharmacistProfile::with('pharmacy')
+                ->where('user_id', $currentPharmacist->id)
+                ->first();
+        }
+
         return Inertia::render('Pharmacist/Prescriptions/Show', [
-            'prescription' => $prescription,
+            'prescription' => [
+                'id' => $prescription->id,
+                'name' => $prescription->name,
+                'status' => $prescription->status,
+                'delivery_method' => $prescription->delivery_method,
+                'repeats_total' => $prescription->repeats_total,
+                'repeats_used' => $prescription->repeats_used,
+                'next_repeat_date' => $prescription->next_repeat_date,
+                'created_at' => $prescription->created_at->format('Y-m-d H:i:s'),
+                'updated_at' => $prescription->updated_at->format('Y-m-d H:i:s'),
+                'is_manual' => $prescription->is_manual,
+                'notes' => $prescription->notes,
+                'file_path' => $prescription->file_path,
+                // Patient information
+                'patient' => [
+                    'id' => $prescription->user->id,
+                    'name' => $prescription->user->name,
+                    'surname' => $prescription->user->surname ?? '',
+                    'email' => $prescription->user->email,
+                    'id_number' => $prescription->user->customer->id_number ?? 'Not Available',
+                    'cellphone_number' => $prescription->user->customer->cellphone_number ?? 'Not Available',
+                    'full_address' => $this->formatAddress($prescription->user->customer),
+                    'allergies' => $prescription->user->customer->allergies ?? 'None',
+                ],
+                // Doctor information
+                'doctor' => [
+                    'id' => $prescription->doctor->id,
+                    'name' => "Dr. {$prescription->doctor->name} {$prescription->doctor->surname}",
+                    'email' => $prescription->doctor->email,
+                    'phone' => $prescription->doctor->phone,
+                    'practice_number' => $prescription->doctor->practice_number,
+                    'specialization' => $prescription->doctor->specialization,
+                ],
+                // Prescription items
+                'items' => $prescription->items->map(function ($item) {
+                    return [
+                        'id' => $item->id,
+                        'medication_name' => $item->medication->name,
+                        'quantity' => (int) $item->quantity,
+                        'instructions' => $item->instructions,
+                        'price' => (float) ($item->price ?? 0),
+                        'repeats' => (int) $item->repeats,
+                        'repeats_used' => (int) $item->repeats_used,
+                        'active_ingredients' => $item->medication->activeIngredients->pluck('name')->join(', '),
+                    ];
+                }),
+            ],
+            'dispensed_history' => $dispensedHistory,
+            'totals' => [
+                'total_cost' => (float) $totalCost,
+                'total_items_dispensed' => (int) $totalItemsDispensed,
+                'prescription_total_value' => (float) $prescription->items->sum('price'),
+            ],
+            'current_pharmacist' => $currentPharmacistProfile ? [
+                'name' => $currentPharmacist->name,
+                'registration_number' => $currentPharmacistProfile->registration_number,
+                'pharmacy' => $currentPharmacistProfile->pharmacy ? [
+                    'name' => $currentPharmacistProfile->pharmacy->name,
+                    'address' => $currentPharmacistProfile->pharmacy->physical_address,
+                    'phone' => $currentPharmacistProfile->pharmacy->contact_number,
+                    'email' => $currentPharmacistProfile->pharmacy->email,
+                    'registration_number' => $currentPharmacistProfile->pharmacy->health_council_registration_number,
+                ] : null,
+            ] : null,
         ]);
+    }
+
+    /**
+     * Helper method to format customer address
+     */
+    private function formatAddress($customer)
+    {
+        if (!$customer) return 'Not Available';
+        
+        $addressParts = array_filter([
+            $customer->house_number,
+            $customer->street,
+            $customer->city,
+            $customer->state,
+            $customer->postal_code,
+        ]);
+        
+        return !empty($addressParts) ? implode(', ', $addressParts) : 'Not Available';
     }
 
     public function loadAction(Prescription $prescription)
@@ -418,8 +596,8 @@ class PharmacistPrescriptionController extends Controller
             return redirect()->route('login');
         }
 
-        // Get or create pharmacist profile
-        $profile = PharmacistProfile::where('user_id', $user->id)->first();
+        // Get or create pharmacist profile with pharmacy information
+        $profile = PharmacistProfile::with('pharmacy')->where('user_id', $user->id)->first();
         if (!$profile) {
             $profile = PharmacistProfile::create(['user_id' => $user->id]);
         }
@@ -472,6 +650,15 @@ class PharmacistPrescriptionController extends Controller
             'license_expiring_soon' => $profile->license_expiring_soon,
             'years_since_registration' => $profile->years_since_registration,
             'created_at' => $user->created_at->format('M d, Y'),
+            'pharmacy' => $profile->pharmacy ? [
+                'id' => $profile->pharmacy->id,
+                'name' => $profile->pharmacy->name,
+                'health_council_registration_number' => $profile->pharmacy->health_council_registration_number,
+                'physical_address' => $profile->pharmacy->physical_address,
+                'contact_number' => $profile->pharmacy->contact_number,
+                'email' => $profile->pharmacy->email,
+                'website_url' => $profile->pharmacy->website_url,
+            ] : null,
         ];
 
         $statistics = [
@@ -499,11 +686,14 @@ class PharmacistPrescriptionController extends Controller
             return redirect()->route('login');
         }
 
-        // Get or create pharmacist profile
-        $profile = PharmacistProfile::where('user_id', $user->id)->first();
+        // Get or create pharmacist profile with pharmacy information
+        $profile = PharmacistProfile::with('pharmacy')->where('user_id', $user->id)->first();
         if (!$profile) {
             $profile = PharmacistProfile::create(['user_id' => $user->id]);
         }
+
+        // Get all pharmacies for selection
+        $pharmacies = \App\Models\Pharmacy::select('id', 'name', 'physical_address')->get();
 
         $pharmacistData = [
             'id' => $user->id,
@@ -525,10 +715,18 @@ class PharmacistPrescriptionController extends Controller
             'languages' => $profile->languages ?? [],
             'license_status' => $profile->license_status ?? 'active',
             'license_expiry' => $profile->license_expiry ? Carbon::parse($profile->license_expiry)->format('Y-m-d') : '',
+            'pharmacy_id' => $profile->pharmacy_id ?? null,
+            'profile_completed' => $profile->profile_completed ?? false,
+            'pharmacy' => $profile->pharmacy ? [
+                'id' => $profile->pharmacy->id,
+                'name' => $profile->pharmacy->name,
+                'physical_address' => $profile->pharmacy->physical_address,
+            ] : null,
         ];
 
         return Inertia::render('Pharmacist/EditProfile', [
             'pharmacist' => $pharmacistData,
+            'pharmacies' => $pharmacies,
             'specialization_options' => [
                 'Clinical Pharmacy',
                 'Hospital Pharmacy',
@@ -595,8 +793,18 @@ class PharmacistPrescriptionController extends Controller
             'languages.*' => 'string|max:255',
             'license_status' => 'nullable|string|in:active,expired,suspended,probation',
             'license_expiry' => 'nullable|date|after:today',
+            'pharmacy_id' => 'nullable|string', // Changed to string to handle 'none'
             'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
+
+        // Handle pharmacy_id conversion
+        $pharmacyId = null;
+        if (isset($validatedData['pharmacy_id']) && $validatedData['pharmacy_id'] !== 'none' && is_numeric($validatedData['pharmacy_id'])) {
+            // Validate that the pharmacy exists
+            if (Pharmacy::where('id', $validatedData['pharmacy_id'])->exists()) {
+                $pharmacyId = (int) $validatedData['pharmacy_id'];
+            }
+        }
 
         // Handle avatar upload
         $avatarPath = null;
@@ -630,6 +838,8 @@ class PharmacistPrescriptionController extends Controller
             'languages' => $validatedData['languages'] ?? null,
             'license_status' => $validatedData['license_status'] ?? 'active',
             'license_expiry' => $validatedData['license_expiry'] ?? null,
+            'pharmacy_id' => $pharmacyId,
+            'profile_completed' => true, // Mark profile as completed when updated
         ];
 
         if ($avatarPath) {
@@ -645,7 +855,17 @@ class PharmacistPrescriptionController extends Controller
         // Debug: Log the profile after update
         Log::info('Profile after update:', $profile->fresh()->toArray());
 
-        return redirect()->route('pharmacist.profile')->with('success', 'Profile updated successfully.');
+        // Check if this was the first-time profile completion
+        $message = $profile->wasChanged('profile_completed') && $profile->profile_completed 
+            ? 'Welcome! Your profile has been completed successfully. You can now access all features.'
+            : 'Profile updated successfully.';
+
+        // Redirect to dashboard if this was first-time completion, otherwise to profile
+        $redirectRoute = $profile->wasChanged('profile_completed') && $profile->profile_completed
+            ? 'pharmacist.dashboard'
+            : 'pharmacist.profile';
+
+        return redirect()->route($redirectRoute)->with('success', $message);
     }
 
     /**
@@ -653,7 +873,7 @@ class PharmacistPrescriptionController extends Controller
      */
     public function dispenseIndex()
     {
-        $prescriptions = Prescription::with('user', 'doctor', 'items.medication')
+        $prescriptions = Prescription::with('user.customer', 'doctor', 'items.medication')
             ->where('status', 'approved')
             ->whereHas('items', function ($query) {
                 $query->whereRaw('repeats_used < repeats');
@@ -676,7 +896,7 @@ class PharmacistPrescriptionController extends Controller
                     'repeats_used' => $prescription->repeats_used,
                     'next_repeat_date' => $prescription->next_repeat_date ? Carbon::parse($prescription->next_repeat_date)->format('Y-m-d') : null,
                     'delivery_method' => $prescription->delivery_method,
-                    'patient_id_number' => $prescription->patient_id_number,
+                    'patient_id_number' => $prescription->user->customer->id_number ?? $prescription->patient_id_number ?? 'Not Available',
                 ];
             });
 
@@ -762,6 +982,11 @@ class PharmacistPrescriptionController extends Controller
                 $medication = $prescriptionItem->medication;
                 $quantity = $itemData['quantity'];
 
+                // Validate that the quantity matches the original prescription quantity
+                if ($quantity !== $prescriptionItem->quantity) {
+                    throw new \Exception("Quantity modification not allowed. {$medication->name} must be dispensed in the exact prescribed quantity of {$prescriptionItem->quantity}.");
+                }
+
                 // Check if item has repeats remaining
                 if ($prescriptionItem->repeats_used >= $prescriptionItem->repeats) {
                     throw new \Exception("No more repeats available for {$medication->name}.");
@@ -828,5 +1053,511 @@ class PharmacistPrescriptionController extends Controller
 
         return redirect()->route('pharmacist.prescriptions.dispense')
             ->with('success', 'Prescription items dispensed successfully. Customer has been notified.');
+    }
+
+    /**
+     * Show the form to create a new customer account
+     */
+    public function createCustomer()
+    {
+        return Inertia::render('Pharmacist/Customers/Create');
+    }
+
+    /**
+     * Store a newly created customer account for walk-in patients
+     */
+    public function storeCustomer(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'surname' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'id_number' => 'required|string|max:13|unique:customers,id_number',
+            'cellphone_number' => 'required|string|max:15',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            // Generate a temporary password for the customer
+            $temporaryPassword = 'temp' . rand(1000, 9999);
+
+            // Create the User account
+            $user = User::create([
+                'name' => $validated['name'],
+                'surname' => $validated['surname'],
+                'email' => $validated['email'],
+                'password' => Hash::make($temporaryPassword),
+                'role' => 'customer',
+                'password_changed_at' => null, // Mark for mandatory password change on first login
+            ]);
+
+            // Create the Customer profile
+            Customer::create([
+                'user_id' => $user->id,
+                'id_number' => $validated['id_number'],
+                'cellphone_number' => $validated['cellphone_number'],
+            ]);
+
+            // Send email notification to customer with login credentials
+            Mail::to($user->email)->send(
+                new CustomerAccountCreated(
+                    $user->name . ' ' . $user->surname,
+                    $user->email,
+                    $temporaryPassword,
+                    route('login')
+                )
+            );
+
+            DB::commit();
+
+            return redirect()->route('pharmacist.prescriptions.createManual')
+                ->with('success', 'Customer account created successfully! Customer has been notified via email. You can now select the customer from the dropdown.');
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            Log::error('Failed to create customer account: ' . $e->getMessage());
+            
+            return back()->withErrors(['general' => 'Failed to create customer account. Please try again.']);
+        }
+    }
+
+    /**
+     * Create a blank prescription for manual entry and redirect to load form
+     */
+    public function createManual()
+    {
+        // Fetch all customers for selection
+        $customers = User::where('role', 'customer')
+            ->with('customer:user_id,id_number,cellphone_number')
+            ->select('id', 'name', 'surname', 'email')
+            ->get()
+            ->map(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'surname' => $user->surname,
+                    'email' => $user->email,
+                    'cellphone_number' => $user->customer->cellphone_number ?? null,
+                    'id_number' => $user->customer->id_number ?? null,
+                    'full_name' => $user->name . ' ' . $user->surname,
+                ];
+            });
+
+        // Fetch all doctors
+        $doctors = Doctor::select('id', 'name', 'surname', 'email', 'phone', 'practice_number')->get();
+
+        // Fetch all medications with active ingredients
+        $medications = Medication::select('id', 'name', 'current_sale_price')
+            ->with('activeIngredients')
+            ->get()
+            ->map(function ($med) {
+                return [
+                    'id' => $med->id,
+                    'name' => $med->name,
+                    'current_sale_price' => (float) $med->current_sale_price,
+                    'active_ingredients' => $med->activeIngredients->pluck('id')->toArray(),
+                ];
+            });
+
+        // Fetch all active ingredients for allergy selection
+        $activeIngredients = \App\Models\Medication\ActiveIngredient::select('id', 'name')->get();
+
+        return inertia('Pharmacist/Prescriptions/CreateManual', [
+            'customers' => $customers,
+            'doctors' => $doctors,
+            'medications' => $medications,
+            'activeIngredients' => $activeIngredients,
+        ]);
+    }
+
+    /**
+     * Store a manually created prescription
+     */
+    public function storeManual(Request $request)
+    {
+        $validated = $request->validate([
+            'customer_id' => 'required|exists:users,id',
+            'allergies_type' => 'required|in:none,known',
+            'allergies' => 'nullable|array',
+            'allergies.*' => 'exists:active_ingredients,id',
+            'doctor_id' => 'required|exists:doctors,id',
+            'prescription_name' => 'required|string|max:255',
+            'delivery_method' => 'required|string|in:pickup,dispense',
+            'repeats_total' => 'required|integer|min:0|max:5',
+            'items' => 'required|array|min:1',
+            'items.*.medication_id' => 'required|exists:medications,id',
+            'items.*.quantity' => 'required|integer|min:1|max:999',
+            'items.*.instructions' => 'nullable|string|max:500',
+            'items.*.price' => 'required|numeric|min:0',
+            'pharmacy_notes' => 'nullable|string|max:1000',
+        ]);
+
+        DB::beginTransaction();
+        
+        try {
+            // Get the selected customer and doctor
+            $customerId = $validated['customer_id'];
+            $doctorId = $validated['doctor_id'];
+
+            // 1. Handle customer allergies (goes to customer_allergies table)
+            if ($validated['allergies_type'] === 'known' && isset($validated['allergies']) && !empty($validated['allergies'])) {
+                // Remove existing allergies for this customer
+                CustomerAllergy::where('user_id', $customerId)->delete();
+                
+                // Add new allergies to customer_allergies table
+                foreach ($validated['allergies'] as $activeIngredientId) {
+                    CustomerAllergy::create([
+                        'user_id' => $customerId,
+                        'active_ingredient_id' => $activeIngredientId,
+                    ]);
+                }
+            } elseif ($validated['allergies_type'] === 'none') {
+                // Remove all allergies if customer has no allergies
+                CustomerAllergy::where('user_id', $customerId)->delete();
+            }
+
+            // 2. Create the main prescription record (goes to prescriptions table)
+            $prescription = Prescription::create([
+                'user_id' => $customerId,
+                'doctor_id' => $doctorId,
+                'name' => $validated['prescription_name'],
+                'delivery_method' => $validated['delivery_method'],
+                'repeats_total' => $validated['repeats_total'],
+                'repeats_used' => 0,
+                'status' => 'approved',
+                'file_path' => null, // No file for manual prescriptions
+                'is_manual' => true,
+                'notes' => $validated['pharmacy_notes'] ?? null,
+            ]);
+
+            // 3. Create prescription items (goes to prescription_items table)
+            foreach ($validated['items'] as $item) {
+                PrescriptionItem::create([
+                    'prescription_id' => $prescription->id,
+                    'medication_id' => $item['medication_id'],
+                    'quantity' => $item['quantity'],
+                    'instructions' => $item['instructions'] ?? null,
+                    'price' => $item['price'],
+                    'repeats' => $validated['repeats_total'], // Each item gets same number of repeats as prescription
+                    'repeats_used' => 0, // Initially no repeats used
+                ]);
+            }
+
+            DB::commit();
+
+            // 4. Send confirmation email to customer
+            $customer = User::find($customerId);
+            if ($customer) {
+                try {
+                    Mail::to($customer->email)->send(new PrescriptionApprovedMail($prescription));
+                } catch (\Exception $e) {
+                    // Log email error but don't fail the prescription creation
+                    Log::warning('Failed to send prescription approval email: ' . $e->getMessage());
+                }
+            }
+
+            return redirect()->route('pharmacist.prescriptions.dispense')
+                ->with('success', 'Manual prescription created successfully! Customer has been notified via email.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error creating manual prescription: ' . $e->getMessage(), [
+                'request_data' => $request->all(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return back()->withErrors(['error' => 'Failed to create prescription: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Show the form for editing a manual prescription
+     */
+    public function editManual(Prescription $prescription)
+    {
+        // Ensure it's a manual prescription
+        if (!$prescription->is_manual) {
+            return redirect()->route('pharmacist.prescriptions.index')
+                ->with('error', 'This is not a manual prescription.');
+        }
+
+        $prescription->load(['user', 'doctor', 'items.medication']);
+
+        $customers = User::where('role', 'customer')
+            ->with('customer:user_id,id_number')
+            ->select('id', 'name', 'surname', 'email')
+            ->get()
+            ->map(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'surname' => $user->surname,
+                    'email' => $user->email,
+                    'id_number' => $user->customer->id_number ?? null,
+                    'full_name' => $user->name . ' ' . $user->surname,
+                ];
+            });
+
+        $doctors = Doctor::select('id', 'name', 'surname', 'practice_number')->get();
+        $medications = Medication::select('id', 'name', 'current_sale_price')
+            ->with('activeIngredients')
+            ->get()
+            ->map(function ($med) {
+                return [
+                    'id' => $med->id,
+                    'name' => $med->name,
+                    'current_sale_price' => (float) $med->current_sale_price,
+                    'active_ingredients' => $med->activeIngredients->pluck('id')->toArray(),
+                ];
+            });
+
+        $activeIngredients = ActiveIngredient::select('id', 'name')->get();
+
+        return inertia('Pharmacist/Prescriptions/EditManual', [
+            'prescription' => $prescription,
+            'customers' => $customers,
+            'doctors' => $doctors,
+            'medications' => $medications,
+            'activeIngredients' => $activeIngredients,
+        ]);
+    }
+
+    /**
+     * Update a manual prescription
+     */
+    public function updateManual(Request $request, Prescription $prescription)
+    {
+        // Ensure it's a manual prescription
+        if (!$prescription->is_manual) {
+            return redirect()->route('pharmacist.prescriptions.index')
+                ->with('error', 'This is not a manual prescription.');
+        }
+
+        $validated = $request->validate([
+            'customer_id' => 'required|exists:users,id',
+            'allergies_type' => 'required|in:none,known',
+            'allergies' => 'nullable|array',
+            'allergies.*' => 'exists:active_ingredients,id',
+            'doctor_id' => 'required|exists:doctors,id',
+            'prescription_name' => 'required|string|max:255',
+            'delivery_method' => 'required|string|in:pickup,dispense',
+            'repeats_total' => 'required|integer|min:0|max:5',
+            'items' => 'required|array|min:1',
+            'items.*.medication_id' => 'required|exists:medications,id',
+            'items.*.quantity' => 'required|integer|min:1|max:999',
+            'items.*.instructions' => 'nullable|string|max:500',
+            'items.*.price' => 'required|numeric|min:0',
+            'pharmacy_notes' => 'nullable|string|max:1000',
+        ]);
+
+        DB::beginTransaction();
+        
+        try {
+            $customerId = $validated['customer_id'];
+
+            // 1. Handle customer allergies (goes to customer_allergies table)
+            if ($validated['allergies_type'] === 'known' && isset($validated['allergies']) && !empty($validated['allergies'])) {
+                // Remove existing allergies for this customer
+                CustomerAllergy::where('user_id', $customerId)->delete();
+                
+                // Add new allergies to customer_allergies table
+                foreach ($validated['allergies'] as $activeIngredientId) {
+                    CustomerAllergy::create([
+                        'user_id' => $customerId,
+                        'active_ingredient_id' => $activeIngredientId,
+                    ]);
+                }
+            } elseif ($validated['allergies_type'] === 'none') {
+                // Remove all allergies if customer has no allergies
+                CustomerAllergy::where('user_id', $customerId)->delete();
+            }
+
+            // 2. Update the main prescription record
+            $prescription->update([
+                'user_id' => $customerId,
+                'doctor_id' => $validated['doctor_id'],
+                'name' => $validated['prescription_name'],
+                'delivery_method' => $validated['delivery_method'],
+                'repeats_total' => $validated['repeats_total'],
+                'notes' => $validated['pharmacy_notes'] ?? null,
+            ]);
+
+            // 3. Update prescription items - delete existing and recreate
+            $prescription->items()->delete();
+            foreach ($validated['items'] as $item) {
+                PrescriptionItem::create([
+                    'prescription_id' => $prescription->id,
+                    'medication_id' => $item['medication_id'],
+                    'quantity' => $item['quantity'],
+                    'instructions' => $item['instructions'] ?? null,
+                    'price' => $item['price'],
+                    'repeats' => $validated['repeats_total'],
+                    'repeats_used' => 0,
+                ]);
+            }
+
+            DB::commit();
+
+            return redirect()->route('pharmacist.prescriptions.index')
+                ->with('success', 'Manual prescription updated successfully!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error updating manual prescription: ' . $e->getMessage(), [
+                'request_data' => $request->all(),
+                'prescription_id' => $prescription->id,
+                'error' => $e->getMessage(),
+            ]);
+            
+            return back()->withErrors(['error' => 'Failed to update prescription: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Delete a manual prescription
+     */
+    public function destroyManual(Prescription $prescription)
+    {
+        // Ensure it's a manual prescription
+        if (!$prescription->is_manual) {
+            return redirect()->route('pharmacist.prescriptions.index')
+                ->with('error', 'This is not a manual prescription.');
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // Delete prescription items first (due to foreign key constraints)
+            $prescription->items()->delete();
+            
+            // Delete the prescription
+            $prescription->delete();
+
+            DB::commit();
+
+            return redirect()->route('pharmacist.prescriptions.index')
+                ->with('success', 'Manual prescription deleted successfully!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error deleting manual prescription: ' . $e->getMessage(), [
+                'prescription_id' => $prescription->id,
+            ]);
+            
+            return redirect()->route('pharmacist.prescriptions.index')
+                ->with('error', 'Failed to delete prescription.');
+        }
+    }
+
+    /**
+     * Generate and download PDF for a manual prescription
+     */
+    public function generatePdf(Prescription $prescription)
+    {
+        // Ensure it's a manual prescription
+        if (!$prescription->is_manual) {
+            return redirect()->route('pharmacist.prescriptions.index')
+                ->with('error', 'This is not a manual prescription.');
+        }
+
+        try {
+            $prescription->load(['user', 'doctor', 'items.medication']);
+
+            // Generate PDF using DomPDF
+            $pdf = Pdf::loadView('pdf.manual-prescription', [
+                'prescription' => $prescription,
+                'customer' => $prescription->user,
+                'doctor' => $prescription->doctor,
+                'items' => $prescription->items,
+            ]);
+
+            // Save PDF to storage
+            $fileName = 'manual_prescription_' . $prescription->id . '_' . time() . '.pdf';
+            $filePath = 'prescriptions/' . $fileName;
+            
+            Storage::disk('public')->put($filePath, $pdf->output());
+
+            // Update prescription with file path
+            $prescription->update(['file_path' => $filePath]);
+
+            // Return PDF for download
+            return $pdf->download($fileName);
+
+        } catch (\Exception $e) {
+            Log::error('Error generating PDF for manual prescription: ' . $e->getMessage(), [
+                'prescription_id' => $prescription->id,
+            ]);
+            
+            return redirect()->route('pharmacist.prescriptions.index')
+                ->with('error', 'Failed to generate PDF.');
+        }
+    }
+
+    /**
+     * Download prescription as PDF
+     */
+    public function downloadPrescription(Prescription $prescription)
+    {
+        $prescription->load([
+            'user.customer',
+            'doctor',
+            'items.medication.activeIngredients',
+        ]);
+
+        // Get dispensed items history for this prescription
+        $dispensedHistory = DispensedItem::where('prescription_id', $prescription->id)
+            ->with(['pharmacist.pharmacistProfile.pharmacy', 'medication'])
+            ->orderBy('dispensed_at', 'desc')
+            ->get();
+
+        // Get current pharmacist info
+        $currentPharmacist = Auth::user();
+        $currentPharmacistProfile = null;
+        if ($currentPharmacist && $currentPharmacist->role === 'pharmacist') {
+            $currentPharmacistProfile = PharmacistProfile::with('pharmacy')
+                ->where('user_id', $currentPharmacist->id)
+                ->first();
+        }
+
+        // Calculate totals
+        $totalCost = $dispensedHistory->sum('cost');
+        $totalItemsDispensed = $dispensedHistory->sum('quantity_dispensed');
+
+        try {
+            // Generate PDF using DomPDF
+            $pdf = Pdf::loadView('pdf.prescription-detailed', [
+                'prescription' => $prescription,
+                'patient' => $prescription->user,
+                'customer' => $prescription->user->customer,
+                'doctor' => $prescription->doctor,
+                'items' => $prescription->items,
+                'dispensed_history' => $dispensedHistory,
+                'totals' => [
+                    'total_cost' => $totalCost,
+                    'total_items_dispensed' => $totalItemsDispensed,
+                    'prescription_total_value' => $prescription->items->sum('price'),
+                ],
+                'current_pharmacist' => $currentPharmacistProfile,
+                'generated_at' => now(),
+            ]);
+
+            // Set paper size and orientation
+            $pdf->setPaper('A4', 'portrait');
+
+            // Generate filename
+            $filename = 'prescription_' . $prescription->id . '_' . date('Y-m-d_H-i-s') . '.pdf';
+
+            // Return PDF for download
+            return $pdf->download($filename);
+
+        } catch (\Exception $e) {
+            Log::error('Error generating prescription PDF: ' . $e->getMessage(), [
+                'prescription_id' => $prescription->id,
+            ]);
+            
+            return redirect()->back()->with('error', 'Failed to generate PDF.');
+        }
     }
 }

@@ -7,7 +7,7 @@ use App\Http\Controllers\Customer\PrescriptionController;
 use App\Http\Controllers\Customer\OrderController;
 use App\Http\Controllers\Customer\ReportController;
 
-Route::middleware(['auth', 'role:customer'])->prefix('customer')->name('customer.')->group(function () {
+Route::middleware(['auth', 'role:customer', 'password.change'])->prefix('customer')->name('customer.')->group(function () {
     Route::get('/dashboard', fn () => Inertia::render('Customer/Dashboard'))->name('dashboard');
     Route::get('/profile/create', [ProfileController::class, 'create'])->name('profile.create');
     Route::post('/profile', [ProfileController::class, 'store'])->name('profile.store');
@@ -17,7 +17,7 @@ Route::middleware(['auth', 'role:customer'])->prefix('customer')->name('customer
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-Route::middleware(['auth', 'role:customer'])->prefix('customer')->name('customer.')->group(function () {
+Route::middleware(['auth', 'role:customer', 'password.change'])->prefix('customer')->name('customer.')->group(function () {
     Route::get('/prescriptions', [PrescriptionController::class, 'index'])->name('prescriptions.index');
     Route::get('/prescriptions/create', [PrescriptionController::class, 'create'])->name('prescriptions.create');
     Route::post('/prescriptions', [PrescriptionController::class, 'store'])->name('prescriptions.store');
@@ -26,7 +26,7 @@ Route::middleware(['auth', 'role:customer'])->prefix('customer')->name('customer
     Route::delete('/prescriptions/{prescription}', [PrescriptionController::class, 'destroy'])->name('prescriptions.destroy'); // 👈 And this
 });
 
-Route::middleware(['auth', 'role:customer'])->prefix('customer')->name('customer.')->group(function () {
+Route::middleware(['auth', 'role:customer', 'password.change'])->prefix('customer')->name('customer.')->group(function () {
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/create', [OrderController::class, 'create'])->name('orders.create');
     Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');

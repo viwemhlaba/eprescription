@@ -22,6 +22,10 @@ class Prescription extends Model
         'repeats_used',
         'next_repeat_date',
         'delivery_method',
+        'is_manual',
+        'doctor_id',
+        'patient_id_number',
+        'reason_for_rejection',
     ];
 
     public function user()

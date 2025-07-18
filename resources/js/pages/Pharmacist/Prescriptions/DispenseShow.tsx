@@ -4,14 +4,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { AlertTriangle, FileText, Pill, User } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 
 interface Medication {
@@ -70,22 +69,12 @@ interface Props {
 
 export default function DispenseShow({ prescription, customerAllergies }: Props) {
     const [selectedItems, setSelectedItems] = useState<number[]>([]);
-    const [itemQuantities, setItemQuantities] = useState<{ [key: number]: number }>({});
 
     const { data, setData, processing, errors } = useForm({
         prescription_id: prescription.id,
         items: [] as Array<{ item_id: number; quantity: number }>,
         notes: '',
     });
-
-    // Initialize quantities with prescription item quantities
-    useEffect(() => {
-        const initialQuantities: { [key: number]: number } = {};
-        prescription.items.forEach((item) => {
-            initialQuantities[item.id] = item.quantity;
-        });
-        setItemQuantities(initialQuantities);
-    }, [prescription.items]);
 
     const checkItemAllergy = (item: PrescriptionItem) => {
         if (!item.medication?.active_ingredients) return false;
@@ -97,7 +86,7 @@ export default function DispenseShow({ prescription, customerAllergies }: Props)
     const canDispenseItem = (item: PrescriptionItem) => {
         const hasAllergy = checkItemAllergy(item);
         const hasRepeats = item.repeats_remaining > 0;
-        const hasStock = item.medication.quantity_on_hand >= (itemQuantities[item.id] || item.quantity);
+        const hasStock = item.medication.quantity_on_hand >= item.quantity; // Use original quantity
 
         return !hasAllergy && hasRepeats && hasStock;
     };
@@ -106,19 +95,12 @@ export default function DispenseShow({ prescription, customerAllergies }: Props)
         setSelectedItems((prev) => (prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId]));
     };
 
-    const updateItemQuantity = (itemId: number, quantity: number) => {
-        setItemQuantities((prev) => ({
-            ...prev,
-            [itemId]: Math.max(1, quantity),
-        }));
-    };
     const getTotalCost = () => {
         return prescription.items
             .filter((item) => selectedItems.includes(item.id))
             .reduce((total, item) => {
-                const quantity = itemQuantities[item.id] || item.quantity;
                 const price = Number(item.medication.current_sale_price) || 0;
-                return total + price * quantity;
+                return total + price * item.quantity; // Use original quantity
             }, 0);
     };
     const handleDispense = () => {
@@ -129,7 +111,7 @@ export default function DispenseShow({ prescription, customerAllergies }: Props)
 
         const itemsToDispense = selectedItems.map((itemId) => ({
             item_id: itemId,
-            quantity: itemQuantities[itemId] || prescription.items.find((i) => i.id === itemId)?.quantity || 1,
+            quantity: prescription.items.find((i) => i.id === itemId)?.quantity || 1, // Use original quantity
         }));
 
         const formData = {
@@ -272,7 +254,7 @@ export default function DispenseShow({ prescription, customerAllergies }: Props)
                                     {prescription.items.map((item) => {
                                         const hasAllergy = checkItemAllergy(item);
                                         const canDispense = canDispenseItem(item);
-                                        const quantity = itemQuantities[item.id] || item.quantity;
+                                        const quantity = item.quantity; // Use original quantity only
                                         const price = Number(item.medication.current_sale_price) || 0;
                                         const totalPrice = price * quantity;
 
@@ -296,15 +278,9 @@ export default function DispenseShow({ prescription, customerAllergies }: Props)
                                                 </TableCell>
                                                 <TableCell>{item.instructions || 'No instructions'}</TableCell>
                                                 <TableCell>
-                                                    <Input
-                                                        type="number"
-                                                        min="1"
-                                                        max={Math.min(item.quantity, item.medication.quantity_on_hand)}
-                                                        value={quantity}
-                                                        onChange={(e) => updateItemQuantity(item.id, parseInt(e.target.value) || 1)}
-                                                        className="w-20"
-                                                        disabled={!canDispense}
-                                                    />
+                                                    <div className="flex items-center justify-center">
+                                                        <span className="font-medium">{item.quantity}</span>
+                                                    </div>
                                                 </TableCell>
                                                 <TableCell>
                                                     <Badge variant={item.repeats_remaining > 0 ? 'default' : 'destructive'}>

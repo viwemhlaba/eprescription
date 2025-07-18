@@ -41,6 +41,7 @@ interface PrescriptionItem {
 // Define the structure of the Prescription object passed from the backend (from your existing code)
 interface Prescription {
     id: number;
+    user_id: number | null;
     file_path: string | null;
     status: 'pending' | 'approved' | 'dispensed' | 'rejected';
     reason_for_rejection: string | null;
@@ -53,6 +54,7 @@ interface Prescription {
     repeats_total: number; // Ensure this is present in your backend's Prescription model/resource
     repeats_used: number;
     next_repeat_date: string | null;
+    is_manual?: boolean;
     user: {
         id: number;
         name: string;
@@ -71,6 +73,16 @@ interface CustomerAllergy {
     active_ingredient_name: string;
 }
 
+// Customer interface for manual prescription selection
+interface Customer {
+    id: number;
+    name: string;
+    surname: string;
+    email: string;
+    id_number: string | null;
+    full_name: string;
+}
+
 // Define the props for the LoadPrescription page component
 interface LoadPrescriptionProps {
     prescription: Prescription;
@@ -78,9 +90,17 @@ interface LoadPrescriptionProps {
     medications: Medication[];
     customerAllergies: CustomerAllergy[];
     existingPrescriptionItems: PrescriptionItem[];
+    customers?: Customer[]; // Optional for manual prescriptions
 }
 
-const LoadPrescription: React.FC<LoadPrescriptionProps> = ({ prescription, doctors, medications, customerAllergies, existingPrescriptionItems }) => {
+const LoadPrescription: React.FC<LoadPrescriptionProps> = ({
+    prescription,
+    doctors,
+    medications,
+    customerAllergies,
+    existingPrescriptionItems,
+    customers,
+}) => {
     // Removed: const { toast } = useToast();
     const [isAllergyModalOpen, setIsAllergyModalOpen] = useState(false);
     const [isDoctorModalOpen, setIsDoctorModalOpen] = useState(false);
@@ -88,6 +108,7 @@ const LoadPrescription: React.FC<LoadPrescriptionProps> = ({ prescription, docto
     // Form state for the main prescription update
     const { data, setData, post, processing, errors } = useForm({
         _method: 'put',
+        customer_id: prescription.user_id?.toString() || '', // For manual prescriptions
         patient_id_number: prescription.patient_id_number || '',
         doctor_id: prescription.doctor_id?.toString() || '',
         items: existingPrescriptionItems.length > 0 ? existingPrescriptionItems : [{ medication_id: null, quantity: 1, instructions: '' }],
@@ -290,6 +311,36 @@ const LoadPrescription: React.FC<LoadPrescriptionProps> = ({ prescription, docto
                                     />
                                     {errors.patient_id_number && <p className="mt-1 text-sm text-red-500">{errors.patient_id_number}</p>}
                                 </div>
+
+                                {/* Customer Selection for Manual Prescriptions */}
+                                {prescription.is_manual && customers && (
+                                    <div className="space-y-2">
+                                        <Label htmlFor="customer_id">Select Customer</Label>
+                                        <Select
+                                            value={data.customer_id}
+                                            onValueChange={(value) => {
+                                                setData('customer_id', value);
+                                                // Auto-populate ID number when customer is selected
+                                                const selectedCustomer = customers.find((c) => c.id.toString() === value);
+                                                if (selectedCustomer?.id_number) {
+                                                    setData('patient_id_number', selectedCustomer.id_number);
+                                                }
+                                            }}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select a Customer" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {customers.map((customer) => (
+                                                    <SelectItem key={customer.id} value={customer.id.toString()}>
+                                                        {customer.full_name} ({customer.email})
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        {errors.customer_id && <p className="mt-1 text-sm text-red-500">{errors.customer_id}</p>}
+                                    </div>
+                                )}
 
                                 <div className="space-y-2">
                                     <Label htmlFor="doctor_id">Prescribing Doctor</Label>
