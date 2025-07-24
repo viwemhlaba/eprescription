@@ -4,22 +4,26 @@
 A new stock order has been placed successfully.
 
 **Order Details:**
-- Order ID: {{ $stockOrder->id }}
-- Order Date: {{ $stockOrder->created_at->format('Y-m-d H:i:s') }}
+- Order Number: {{ $stockOrder->order_number }}
+- Order Date: {{ $stockOrder->created_at->format('F j, Y \a\t g:i A') }}
 - Status: {{ $stockOrder->status }}
 
 <x-mail::table>
-| Item | Quantity | Unit Price | Total |
-|:-----|:---------|:-----------|:------|
+| Medication | Quantity Ordered |
+|:-----------|:-----------------|
 @foreach($stockOrder->items as $item)
-| {{ $item->medication->name ?? 'N/A' }} | {{ $item->quantity }} | {{ number_format($item->unit_price, 2) }} | {{ number_format($item->total_price, 2) }} |
+| {{ $item->medication->name ?? 'N/A' }} | {{ $item->quantity }} units |
 @endforeach
 </x-mail::table>
 
-**Order Total: R{{ number_format($stockOrder->total_amount, 2) }}**
+Please prepare the requested medications for delivery. Contact us if you have any questions regarding this order.
 
-The supplier has been notified and will process your order shortly.
+<x-mail::button :url="'#'">
+View Order Details
+</x-mail::button>
 
-Thank you,<br>
-{{ config('app.name') }}
+Thank you for your continued partnership.
+
+Best regards,<br>
+{{ config('app.name') }} Pharmacy Management
 </x-mail::message>

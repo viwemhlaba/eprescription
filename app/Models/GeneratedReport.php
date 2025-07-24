@@ -42,7 +42,8 @@ class GeneratedReport extends Model
 
     public function getFileExists(): bool
     {
-        return Storage::disk('public')->exists($this->file_path);
+        // Check local disk first (for stock reports), then public disk (for pharmacist reports)
+        return Storage::disk('local')->exists($this->file_path) || Storage::disk('public')->exists($this->file_path);
     }
 
     public function getFormattedFileSize(): string
@@ -63,6 +64,6 @@ class GeneratedReport extends Model
 
     public function isExpired(): bool
     {
-        return $this->expires_at && $this->expires_at->isPast();
+        return $this->expires_at && $this->expires_at < now();
     }
 }

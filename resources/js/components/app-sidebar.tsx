@@ -134,6 +134,11 @@ export function AppSidebar() {
             icon: Users, // Using Users icon
         },
         {
+            title: 'Doctors',
+            href: route('manager.doctors.index'),
+            icon: UserCheck,
+        },
+        {
             title: 'Medication Suppliers',
             href: route('manager.suppliers.index'),
             icon: ShoppingCart,

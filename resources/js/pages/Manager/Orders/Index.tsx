@@ -1,5 +1,6 @@
 import { DataTable } from '@/components/data-table';
 import Heading from '@/components/heading';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Separator } from '@/components/ui/separator';
@@ -12,8 +13,9 @@ import { route } from 'ziggy-js';
 
 interface StockOrder {
     id: number;
+    order_number: string;
     supplier_name: string;
-    status: 'pending' | 'completed';
+    status: 'pending' | 'completed' | 'Pending' | 'Received';
     total_items: number;
     created_at: string;
     received_at?: string;
@@ -21,9 +23,13 @@ interface StockOrder {
 
 const columns: ColumnDef<StockOrder>[] = [
     {
-        accessorKey: 'id',
-        header: 'Order ID',
-        cell: ({ row }) => `#${row.getValue('id')}`,
+        accessorKey: 'order_number',
+        header: 'Order Number',
+        cell: ({ row }) => (
+            <Link href={route('manager.orders.show', row.original.id)} className="text-primary font-medium hover:underline">
+                {row.getValue('order_number')}
+            </Link>
+        ),
     },
     {
         accessorKey: 'supplier_name',
@@ -32,20 +38,19 @@ const columns: ColumnDef<StockOrder>[] = [
     {
         accessorKey: 'total_items',
         header: 'Total Items',
+        cell: ({ row }) => <span className="font-medium">{row.getValue('total_items')}</span>,
     },
     {
         accessorKey: 'status',
         header: 'Status',
         cell: ({ row }) => {
             const status = row.getValue('status') as string;
+            const normalizedStatus = status.toLowerCase();
+
             return (
-                <span
-                    className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
-                        status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                    }`}
-                >
+                <Badge variant={normalizedStatus === 'received' || normalizedStatus === 'completed' ? 'default' : 'secondary'}>
                     {status.charAt(0).toUpperCase() + status.slice(1)}
-                </span>
+                </Badge>
             );
         },
     },
@@ -64,8 +69,11 @@ const columns: ColumnDef<StockOrder>[] = [
     },
     {
         id: 'actions',
+        header: 'Actions',
         cell: ({ row }) => {
             const order = row.original;
+            const isPending = order.status.toLowerCase() === 'pending';
+
             return (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -81,9 +89,9 @@ const columns: ColumnDef<StockOrder>[] = [
                                 View Details
                             </Link>
                         </DropdownMenuItem>
-                        {order.status === 'pending' && (
+                        {isPending && (
                             <DropdownMenuItem asChild>
-                                <Link href={route('manager.orders.receive', order.id)} method="patch" as="button">
+                                <Link href={route('manager.orders.receive', order.id)} method="patch" as="button" className="w-full">
                                     <Package className="mr-2 h-4 w-4" />
                                     Mark as Received
                                 </Link>

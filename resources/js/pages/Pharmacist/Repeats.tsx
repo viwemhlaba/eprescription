@@ -1,16 +1,18 @@
 import Heading from '@/components/heading';
 import AppLayout from '@/layouts/app-layout';
-import { useEffect, useState } from 'react';
 import { router } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 
-    interface RepeatRequest {
-        id: number;
-        customer_name: string;
-        medication_name: string;
-        last_dispensed_date: string;
-        requested_at: string;
-        reason?: string;
-    }
+interface RepeatRequest {
+    id: number;
+    customer_name: string;
+    medication_name: string;
+    last_dispensed_date: string;
+    requested_at: string;
+    reason?: string;
+}
+
+export default function Repeats() {
     const [repeats, setRepeats] = useState<RepeatRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -39,7 +41,7 @@ import { router } from '@inertiajs/react';
                 onSuccess: () => {
                     setRepeats((prev) => prev.filter((r) => r.id !== repeatId));
                 },
-            }
+            },
         );
     };
 
@@ -95,7 +97,8 @@ import { router } from '@inertiajs/react';
                     </div>
                 )}
                 <div className="mt-4 max-w-2xl text-sm text-zinc-400">
-                    <b>Why reject?</b> For example, if the customer is requesting a repeat too soon after their last dispense, or if there are medical precautions. Always check the dates and prescription details before dispensing.
+                    <b>Why reject?</b> For example, if the customer is requesting a repeat too soon after their last dispense, or if there are medical
+                    precautions. Always check the dates and prescription details before dispensing.
                 </div>
             </div>
         </AppLayout>

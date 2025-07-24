@@ -14,19 +14,55 @@ class OrderController extends Controller
 {
     public function index()
     {
-        $orders = StockOrder::with('supplier')->latest()->paginate(10);
+        $orders = StockOrder::with(['supplier', 'items'])
+            ->latest()
+            ->paginate(10);
+
+        // Transform the data to include necessary fields
+        $orders->getCollection()->transform(function ($order) {
+            return [
+                'id' => $order->id,
+                'order_number' => $order->order_number,
+                'supplier_name' => $order->supplier->name ?? 'Unknown Supplier',
+                'status' => $order->status,
+                'total_items' => $order->items->sum('quantity'),
+                'created_at' => $order->created_at,
+                'received_at' => $order->received_at,
+            ];
+        });
 
         return Inertia::render('Manager/Orders/Index', [
             'orders' => $orders,
         ]);
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        $medicationsToReorder = Medication::whereRaw('quantity_on_hand <= reorder_level + 10')
-            ->with('supplier')
-            ->get()
-            ->groupBy('supplier.name');
+        // Get IDs of medications that already have pending orders
+        $medicationsWithPendingOrders = DB::table('stock_order_items')
+            ->join('stock_orders', 'stock_order_items.stock_order_id', '=', 'stock_orders.id')
+            ->where('stock_orders.status', 'Pending')
+            ->pluck('stock_order_items.medication_id')
+            ->toArray();
+
+        // If a specific medication is provided, filter for that
+        $medicationId = $request->get('medication');
+        
+        if ($medicationId) {
+            $medicationsToReorder = Medication::with('supplier')
+                ->where('id', $medicationId)
+                ->whereNotIn('id', $medicationsWithPendingOrders)
+                ->get()
+                ->groupBy('supplier.name');
+        } else {
+            // Get medications that are at or within 10 units of reorder level (excluding those with pending orders)
+            $medicationsToReorder = Medication::whereRaw('quantity_on_hand <= reorder_level + 10')
+                ->with('supplier')
+                ->whereNotIn('id', $medicationsWithPendingOrders)
+                ->orderBy('quantity_on_hand', 'asc')
+                ->get()
+                ->groupBy('supplier.name');
+        }
 
         return Inertia::render('Manager/Orders/CreateStockOrder', [
             'medicationsToReorder' => $medicationsToReorder,

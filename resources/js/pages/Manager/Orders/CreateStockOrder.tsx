@@ -1,6 +1,11 @@
 import Heading from '@/components/heading';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { PageProps } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
@@ -24,17 +29,31 @@ interface MedicationToReorder extends Medication {
 
 export default function CreateStockOrder({ medicationsToReorder }: PageProps<{ medicationsToReorder: { [key: string]: MedicationToReorder[] } }>) {
     const [selectedMedications, setSelectedMedications] = useState<{ [key: number]: number }>({});
-    const { post, processing } = useForm();
+    const [checkedMedications, setCheckedMedications] = useState<Set<number>>(new Set());
+    const { data, setData, post, processing } = useForm({
+        medications: [] as { id: number; quantity: number }[],
+    });
 
     const handleCheckboxChange = (medicationId: number) => {
-        setSelectedMedications((prev) => {
-            const newSelected = { ...prev };
-            if (newSelected[medicationId]) {
-                delete newSelected[medicationId];
+        setCheckedMedications((prev) => {
+            const newChecked = new Set(prev);
+            if (newChecked.has(medicationId)) {
+                newChecked.delete(medicationId);
+                // Remove from selected medications when unchecked
+                setSelectedMedications((prevSelected) => {
+                    const newSelected = { ...prevSelected };
+                    delete newSelected[medicationId];
+                    return newSelected;
+                });
             } else {
-                newSelected[medicationId] = 0;
+                newChecked.add(medicationId);
+                // Set default quantity when checked
+                setSelectedMedications((prevSelected) => ({
+                    ...prevSelected,
+                    [medicationId]: 1,
+                }));
             }
-            return newSelected;
+            return newChecked;
         });
     };
 
@@ -55,25 +74,16 @@ export default function CreateStockOrder({ medicationsToReorder }: PageProps<{ m
         e.preventDefault();
 
         const medicationsToSubmit = Object.entries(selectedMedications)
-            .filter(([_, quantity]) => quantity > 0)
+            .filter(([, quantity]) => quantity > 0)
             .map(([id, quantity]) => ({ id: parseInt(id, 10), quantity }));
 
         if (medicationsToSubmit.length === 0) {
             toast.error('Please select at least one medication and set a quantity greater than 0.');
             return;
         }
-        const data = {
-            medications: medicationsToSubmit,
-        };
 
-        post(route('manager.orders.store'), data, {
-            onSuccess: () => {
-                toast.success('Stock order created successfully!');
-            },
-            onError: () => {
-                toast.error('Failed to create stock order. Please try again.');
-            },
-        });
+        setData('medications', medicationsToSubmit);
+        post(route('manager.orders.store'));
     };
 
     return (
@@ -89,9 +99,7 @@ export default function CreateStockOrder({ medicationsToReorder }: PageProps<{ m
                                     <ArrowLeft className="h-4 w-4" />
                                 </Button>
                             </Link>
-                            <Heading level="h1" size="xl">
-                                Create Stock Order
-                            </Heading>
+                            <Heading title="Create Stock Order" description="Select medications to order from suppliers" />
                         </div>
                     </div>
 
@@ -99,77 +107,67 @@ export default function CreateStockOrder({ medicationsToReorder }: PageProps<{ m
 
                     <form onSubmit={handleSubmit} className="space-y-8">
                         {Object.entries(medicationsToReorder).map(([supplierName, medications]) => (
-                            <div key={supplierName} className="space-y-4">
-                                <div className="bg-card rounded-lg border">
-                                    <div className="bg-muted/25 border-b px-6 py-4">
-                                        <h3 className="text-lg font-semibold">{supplierName}</h3>
-                                    </div>
-                                    <div className="overflow-hidden">
-                                        <table className="w-full">
-                                            <thead className="bg-muted/25">
-                                                <tr>
-                                                    <th className="px-6 py-3 text-left text-sm font-medium">Select</th>
-                                                    <th className="px-6 py-3 text-left text-sm font-medium">Medication</th>
-                                                    <th className="px-6 py-3 text-left text-sm font-medium">Schedule</th>
-                                                    <th className="px-6 py-3 text-left text-sm font-medium">Current Stock</th>
-                                                    <th className="px-6 py-3 text-left text-sm font-medium">Reorder Level</th>
-                                                    <th className="px-6 py-3 text-left text-sm font-medium">Order Quantity</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y">
-                                                {medications.map((medication) => (
-                                                    <tr key={medication.id} className="hover:bg-muted/25">
-                                                        <td className="px-6 py-4">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={medication.id in selectedMedications}
-                                                                onChange={() => handleCheckboxChange(medication.id)}
-                                                                className="text-primary focus:ring-primary h-4 w-4 rounded border-gray-300"
-                                                            />
-                                                        </td>
-                                                        <td className="px-6 py-4 text-sm font-medium">{medication.name}</td>
-                                                        <td className="px-6 py-4 text-sm">
-                                                            <span className="inline-flex rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">
-                                                                {medication.schedule}
-                                                            </span>
-                                                        </td>
-                                                        <td className="px-6 py-4 text-sm">{medication.quantity_on_hand}</td>
-                                                        <td className="px-6 py-4 text-sm">{medication.reorder_level}</td>
-                                                        <td className="px-6 py-4 text-sm">
-                                                            <input
-                                                                type="number"
-                                                                min="0"
-                                                                disabled={!selectedMedications[medication.id]}
-                                                                onChange={(e) =>
-                                                                    handleQuantityChange(medication.id, parseInt(e.target.value, 10) || 0)
-                                                                }
-                                                                value={selectedMedications[medication.id] || ''}
-                                                                className="border-input bg-background focus:border-primary focus:ring-primary w-24 rounded-md border px-3 py-1 text-sm focus:ring-1 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                                                                placeholder="0"
-                                                            />
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                            <tfoot>
-                                                <tr className="bg-muted/25 border-t">
-                                                    <td colSpan={5} className="px-6 py-3 text-right text-sm font-semibold">
-                                                        Total Items:
-                                                    </td>
-                                                    <td className="px-6 py-3 text-sm font-semibold">{getSupplierTotal(supplierName)}</td>
-                                                </tr>
-                                            </tfoot>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
+                            <Card key={supplierName}>
+                                <CardHeader>
+                                    <CardTitle>{supplierName}</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead className="w-12">Select</TableHead>
+                                                <TableHead>Medication</TableHead>
+                                                <TableHead>Schedule</TableHead>
+                                                <TableHead>Current Stock</TableHead>
+                                                <TableHead>Reorder Level</TableHead>
+                                                <TableHead className="w-32">Order Quantity</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {medications.map((medication) => (
+                                                <TableRow key={medication.id}>
+                                                    <TableCell>
+                                                        <Checkbox
+                                                            checked={checkedMedications.has(medication.id)}
+                                                            onCheckedChange={() => handleCheckboxChange(medication.id)}
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell className="font-medium">{medication.name}</TableCell>
+                                                    <TableCell>
+                                                        <Badge variant="outline">{medication.schedule}</Badge>
+                                                    </TableCell>
+                                                    <TableCell>{medication.quantity_on_hand}</TableCell>
+                                                    <TableCell>{medication.reorder_level}</TableCell>
+                                                    <TableCell>
+                                                        <Input
+                                                            type="number"
+                                                            min="1"
+                                                            disabled={!checkedMedications.has(medication.id)}
+                                                            onChange={(e) => handleQuantityChange(medication.id, parseInt(e.target.value, 10) || 0)}
+                                                            value={selectedMedications[medication.id] || ''}
+                                                            className="w-20"
+                                                            placeholder="1"
+                                                        />
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                            <TableRow>
+                                                <TableCell colSpan={5} className="text-right font-semibold">
+                                                    Total Items:
+                                                </TableCell>
+                                                <TableCell className="font-semibold">{getSupplierTotal(supplierName)}</TableCell>
+                                            </TableRow>
+                                        </TableBody>
+                                    </Table>
+                                </CardContent>
+                            </Card>
                         ))}
 
                         <div className="flex items-center justify-end space-x-3">
                             <Link href={route('manager.orders.index')}>
                                 <Button variant="outline">Cancel</Button>
                             </Link>
-                            <Button type="submit" disabled={processing || Object.keys(selectedMedications).length === 0}>
+                            <Button type="submit" disabled={processing || checkedMedications.size === 0}>
                                 {processing ? 'Creating Order...' : 'Create Stock Order'}
                             </Button>
                         </div>

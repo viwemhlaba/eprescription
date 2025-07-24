@@ -58,6 +58,19 @@ class Medication extends Model
         return $this->belongsTo(\App\Models\MedicationSupplier::class, 'supplier_id');
     }
 
+    public function stockOrderItems()
+    {
+        return $this->hasMany(\App\Models\StockOrderItem::class);
+    }
+
+    public function pendingOrderItems()
+    {
+        return $this->hasMany(\App\Models\StockOrderItem::class)
+            ->whereHas('stockOrder', function ($query) {
+                $query->where('status', 'Pending');
+            });
+    }
+
     public function addStock(int $amount)
     {
         $this->increment('quantity_on_hand', $amount);

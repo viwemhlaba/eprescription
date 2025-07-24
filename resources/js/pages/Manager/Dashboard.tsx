@@ -1,9 +1,11 @@
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/react';
+import { type BreadcrumbItem, PageProps } from '@/types';
+import { Head, Link } from '@inertiajs/react';
+import { AlertTriangle, Package, ShoppingCart, Users } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -12,46 +14,112 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function Dashboard() {
+interface Stats {
+    total_medications: number;
+    total_pharmacists: number;
+    critical_stock_count: number;
+    out_of_stock_count: number;
+    pending_orders: number;
+    pending_prescriptions: number;
+}
+
+interface Medication {
+    id: number;
+    name: string;
+    quantity_on_hand: number;
+    reorder_level: number;
+    supplier?: {
+        name: string;
+    };
+}
+
+interface Order {
+    id: number;
+    order_number: string;
+    status: string;
+    created_at: string;
+    supplier?: {
+        name: string;
+    };
+}
+
+interface Alert {
+    type: string;
+    description: string;
+    priority: string;
+    date: string;
+    medication_id?: number;
+    action_type?: string;
+}
+
+interface DashboardProps extends PageProps {
+    stats: Stats;
+    low_stock_medications: Medication[];
+    recent_orders: Order[];
+    alerts: Alert[];
+}
+
+export default function Dashboard({ stats, low_stock_medications, recent_orders, alerts }: DashboardProps) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Manager Dashboard" />
             <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-6">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <Card>
-                        <CardHeader>
-                            <CardTitle>Total Medications</CardTitle>
-                            <CardDescription>In Inventory</CardDescription>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Total Medications</CardTitle>
+                            <Package className="text-muted-foreground h-4 w-4" />
                         </CardHeader>
-                        <CardContent className="text-3xl font-bold">352</CardContent>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{stats.total_medications}</div>
+                            <p className="text-muted-foreground text-xs">In Inventory</p>
+                        </CardContent>
                     </Card>
                     <Card>
-                        <CardHeader>
-                            <CardTitle>Active Prescriptions</CardTitle>
-                            <CardDescription>Currently Active</CardDescription>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Pending Prescriptions</CardTitle>
+                            <ShoppingCart className="text-muted-foreground h-4 w-4" />
                         </CardHeader>
-                        <CardContent className="text-3xl font-bold">87</CardContent>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{stats.pending_prescriptions}</div>
+                            <p className="text-muted-foreground text-xs">Awaiting Processing</p>
+                        </CardContent>
                     </Card>
                     <Card>
-                        <CardHeader>
-                            <CardTitle>Orders Pending</CardTitle>
-                            <CardDescription>Awaiting Shipment</CardDescription>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Low Stock Items</CardTitle>
+                            <AlertTriangle className="h-4 w-4 text-yellow-500" />
                         </CardHeader>
-                        <CardContent className="text-3xl font-bold">12</CardContent>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-yellow-600">{stats.critical_stock_count}</div>
+                            <p className="text-muted-foreground text-xs">Need Reordering</p>
+                        </CardContent>
                     </Card>
                     <Card>
-                        <CardHeader>
-                            <CardTitle>Pharmacists</CardTitle>
-                            <CardDescription>Total Staff</CardDescription>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Pharmacists</CardTitle>
+                            <Users className="text-muted-foreground h-4 w-4" />
                         </CardHeader>
-                        <CardContent className="text-3xl font-bold">8</CardContent>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{stats.total_pharmacists}</div>
+                            <p className="text-muted-foreground text-xs">Total Staff</p>
+                        </CardContent>
                     </Card>
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                    <Button>Manage Medication Stock</Button>
-                    <Button variant="outline">Order Medication Stock</Button>
-                    <Button variant="outline">Manage Pharmacist Users</Button>
+                    <Link href={route('manager.medications.stock.index')}>
+                        <Button>Manage Medication Stock</Button>
+                    </Link>
+                    <Link href={route('manager.orders.create')}>
+                        <Button variant="outline">Order Medication Stock</Button>
+                    </Link>
+                    <Link href={route('manager.low-stock.index')}>
+                        <Button variant="outline">View Low Stock</Button>
+                    </Link>
+                    <Link href={route('manager.pharmacies.index')}>
+                        <Button variant="outline">Manage Pharmacist Users</Button>
+                    </Link>
                     <Button variant="outline">Generate Stock Take Report</Button>
                 </div>
 
@@ -61,184 +129,177 @@ export default function Dashboard() {
                         <CardDescription>Important notices requiring attention</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <Table className="min-w-full">
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Type</TableHead>
-                                    <TableHead>Description</TableHead>
-                                    <TableHead>Priority</TableHead>
-                                    <TableHead>Date</TableHead>
-                                    <TableHead>Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                <TableRow>
-                                    <TableCell className="text-red-500">Low Stock</TableCell>
-                                    <TableCell>Adcodol 1ml below reorder level</TableCell>
-                                    <TableCell>High</TableCell>
-                                    <TableCell>Today</TableCell>
-                                    <TableCell>
-                                        <Button size="sm">Reorder</Button>
-                                    </TableCell>
-                                </TableRow>
-                                <TableRow>
-                                    <TableCell className="text-yellow-500">Expiring</TableCell>
-                                    <TableCell>Prescription #PR-125 expiring soon</TableCell>
-                                    <TableCell>Medium</TableCell>
-                                    <TableCell>Tomorrow</TableCell>
-                                    <TableCell>
-                                        <Button size="sm" variant="secondary">
-                                            Review
-                                        </Button>
-                                    </TableCell>
-                                </TableRow>
-                                <TableRow>
-                                    <TableCell className="text-orange-500">Pending</TableCell>
-                                    <TableCell>Order #OR-789 awaiting approval</TableCell>
-                                    <TableCell>Medium</TableCell>
-                                    <TableCell>Yesterday</TableCell>
-                                    <TableCell>
-                                        <Button size="sm" variant="secondary">
-                                            Approve
-                                        </Button>
-                                    </TableCell>
-                                </TableRow>
-                                <TableRow>
-                                    <TableCell className="text-red-500">Low Stock</TableCell>
-                                    <TableCell>Paracetamol 500mg below reorder level</TableCell>
-                                    <TableCell>High</TableCell>
-                                    <TableCell>Today</TableCell>
-                                    <TableCell>
-                                        <Button size="sm">Reorder</Button>
-                                    </TableCell>
-                                </TableRow>
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
-
-                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between">
-                            <div>
-                                <CardTitle>Recent Orders</CardTitle>
-                                <CardDescription>Latest medication orders from suppliers</CardDescription>
-                            </div>
-                            <Button size="sm" variant="outline">
-                                View All
-                            </Button>
-                        </CardHeader>
-                        <CardContent>
-                            <Table>
+                        {alerts.length > 0 ? (
+                            <Table className="min-w-full">
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Order No</TableHead>
-                                        <TableHead>Supplier</TableHead>
+                                        <TableHead>Type</TableHead>
+                                        <TableHead>Description</TableHead>
+                                        <TableHead>Priority</TableHead>
                                         <TableHead>Date</TableHead>
-                                        <TableHead>Status</TableHead>
+                                        <TableHead>Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    <TableRow>
-                                        <TableCell>ORD-5524</TableCell>
-                                        <TableCell>PharmSupply Inc.</TableCell>
-                                        <TableCell>25 April 2023</TableCell>
-                                        <TableCell>
-                                            <span className="text-yellow-600">Pending</span>
-                                        </TableCell>
-                                    </TableRow>
-                                    <TableRow>
-                                        <TableCell>ORD-5521</TableCell>
-                                        <TableCell>MedExpress Ltd</TableCell>
-                                        <TableCell>23 April 2023</TableCell>
-                                        <TableCell>
-                                            <span className="text-purple-600">Shipped</span>
-                                        </TableCell>
-                                    </TableRow>
-                                    <TableRow>
-                                        <TableCell>ORD-5518</TableCell>
-                                        <TableCell>PharmaSolutions</TableCell>
-                                        <TableCell>22 April 2023</TableCell>
-                                        <TableCell>
-                                            <span className="text-green-600">Delivered</span>
-                                        </TableCell>
-                                    </TableRow>
+                                    {alerts.map((alert, index) => (
+                                        <TableRow key={index}>
+                                            <TableCell
+                                                className={
+                                                    alert.type === 'Low Stock'
+                                                        ? 'text-red-500'
+                                                        : alert.type === 'Pending Orders'
+                                                          ? 'text-yellow-500'
+                                                          : 'text-blue-500'
+                                                }
+                                            >
+                                                {alert.type}
+                                            </TableCell>
+                                            <TableCell>{alert.description}</TableCell>
+                                            <TableCell>
+                                                <span
+                                                    className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
+                                                        alert.priority === 'High'
+                                                            ? 'bg-red-100 text-red-800'
+                                                            : alert.priority === 'Medium'
+                                                              ? 'bg-yellow-100 text-yellow-800'
+                                                              : 'bg-blue-100 text-blue-800'
+                                                    }`}
+                                                >
+                                                    {alert.priority}
+                                                </span>
+                                            </TableCell>
+                                            <TableCell>{alert.date}</TableCell>
+                                            <TableCell>
+                                                {alert.action_type === 'reorder' && (
+                                                    <Link
+                                                        href={route(
+                                                            'manager.orders.create',
+                                                            alert.medication_id ? { medication: alert.medication_id } : {},
+                                                        )}
+                                                    >
+                                                        <Button size="sm">Reorder</Button>
+                                                    </Link>
+                                                )}
+                                                {alert.action_type === 'view_orders' && (
+                                                    <Link href={route('manager.orders.index')}>
+                                                        <Button size="sm" variant="secondary">
+                                                            View Orders
+                                                        </Button>
+                                                    </Link>
+                                                )}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
                                 </TableBody>
                             </Table>
+                        ) : (
+                            <p className="text-muted-foreground py-4 text-center">No alerts at this time</p>
+                        )}
+                    </CardContent>
+                </Card>
+
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Low Stock Medications</CardTitle>
+                            <CardDescription>Medications that need to be reordered soon</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {low_stock_medications.length > 0 ? (
+                                <div className="overflow-x-auto">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Medication</TableHead>
+                                                <TableHead>Current Stock</TableHead>
+                                                <TableHead>Reorder Level</TableHead>
+                                                <TableHead>Status</TableHead>
+                                                <TableHead>Supplier</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {low_stock_medications.map((medication) => {
+                                                const isCritical = medication.quantity_on_hand <= medication.reorder_level;
+                                                const isOutOfStock = medication.quantity_on_hand === 0;
+
+                                                return (
+                                                    <TableRow key={medication.id}>
+                                                        <TableCell className="font-medium">{medication.name}</TableCell>
+                                                        <TableCell className="font-semibold">{medication.quantity_on_hand}</TableCell>
+                                                        <TableCell>{medication.reorder_level}</TableCell>
+                                                        <TableCell>
+                                                            {isOutOfStock ? (
+                                                                <Badge variant="destructive">Out of Stock</Badge>
+                                                            ) : isCritical ? (
+                                                                <Badge variant="destructive">Critical</Badge>
+                                                            ) : (
+                                                                <Badge variant="secondary">Low Stock</Badge>
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell>{medication.supplier?.name || 'N/A'}</TableCell>
+                                                    </TableRow>
+                                                );
+                                            })}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            ) : (
+                                <p className="text-muted-foreground py-4 text-center">All medications are adequately stocked</p>
+                            )}
                         </CardContent>
                     </Card>
 
                     <Card>
-                        <CardHeader className="flex flex-row items-center justify-between">
-                            <div>
-                                <CardTitle>Stock Levels at Reorder Point</CardTitle>
-                                <CardDescription>Medications that need to be restocked soon</CardDescription>
-                            </div>
-                            <Button size="sm" variant="outline">
-                                View All
-                            </Button>
+                        <CardHeader>
+                            <CardTitle>Recent Orders</CardTitle>
+                            <CardDescription>Latest stock orders placed</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Medication</TableHead>
-                                        <TableHead>Quantity</TableHead>
-                                        <TableHead>Reorder Level</TableHead>
-                                        <TableHead>Status</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    <TableRow>
-                                        <TableCell>Adcodol 1ml</TableCell>
-                                        <TableCell>12</TableCell>
-                                        <TableCell>20</TableCell>
-                                        <TableCell>
-                                            <span className="font-semibold text-red-600">Critical</span>
-                                        </TableCell>
-                                    </TableRow>
-                                    <TableRow>
-                                        <TableCell>Paracetamol 500mg</TableCell>
-                                        <TableCell>25</TableCell>
-                                        <TableCell>30</TableCell>
-                                        <TableCell>
-                                            <span className="font-semibold text-yellow-600">Low</span>
-                                        </TableCell>
-                                    </TableRow>
-                                    <TableRow>
-                                        <TableCell>Amoxicillin 250mg</TableCell>
-                                        <TableCell>18</TableCell>
-                                        <TableCell>25</TableCell>
-                                        <TableCell>
-                                            <span className="font-semibold text-yellow-600">Low</span>
-                                        </TableCell>
-                                    </TableRow>
-                                </TableBody>
-                            </Table>
+                            {recent_orders.length > 0 ? (
+                                <div className="overflow-x-auto">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Order Number</TableHead>
+                                                <TableHead>Supplier</TableHead>
+                                                <TableHead>Status</TableHead>
+                                                <TableHead>Date</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {recent_orders.map((order) => (
+                                                <TableRow key={order.id}>
+                                                    <TableCell className="font-medium">
+                                                        <Link href={route('manager.orders.show', order.id)} className="hover:underline">
+                                                            {order.order_number}
+                                                        </Link>
+                                                    </TableCell>
+                                                    <TableCell>{order.supplier?.name || 'N/A'}</TableCell>
+                                                    <TableCell>
+                                                        <Badge
+                                                            variant={
+                                                                order.status === 'Pending'
+                                                                    ? 'secondary'
+                                                                    : order.status === 'Received'
+                                                                      ? 'default'
+                                                                      : 'outline'
+                                                            }
+                                                        >
+                                                            {order.status}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell>{new Date(order.created_at).toLocaleDateString()}</TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            ) : (
+                                <p className="text-muted-foreground py-4 text-center">No recent orders</p>
+                            )}
                         </CardContent>
                     </Card>
                 </div>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Pharmacy Performance</CardTitle>
-                        <CardDescription>Monthly sales and prescription fulfilment rates</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex flex-col justify-between gap-4 sm:flex-row">
-                            <div>
-                                <p className="text-lg font-semibold">Monthly Sales</p>
-                                <p className="text-3xl font-bold">R 125,850</p>
-                                <p className="text-sm text-green-600">Up 8% from last month</p>
-                            </div>
-                            <div>
-                                <p className="text-lg font-semibold">Prescription Fulfilment Rate</p>
-                                <p className="text-3xl font-bold">96.7%</p>
-                                <p className="text-sm">Target: 95%</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
             </div>
         </AppLayout>
     );

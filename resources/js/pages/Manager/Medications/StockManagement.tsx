@@ -1,6 +1,7 @@
 import AddStockModal from '@/components/Manager/Medications/AddStockModal';
 import SetStockModal from '@/components/Manager/Medications/SetStockModal';
 import Heading from '@/components/heading';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -8,6 +9,19 @@ import AppLayout from '@/layouts/app-layout';
 import { PageProps } from '@/types';
 import { Head } from '@inertiajs/react';
 import React, { useState } from 'react';
+
+// Update the interface to match Laravel's paginator
+interface Paginated<T> {
+    data: T[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    from: number;
+    to: number;
+    next_page_url: string | null;
+    prev_page_url: string | null;
+}
 
 interface Medication {
     id: number;
@@ -18,15 +32,22 @@ interface Medication {
 }
 
 interface StockManagementPageProps extends PageProps {
-    medications: Medication[];
+    medications: Paginated<Medication>;
 }
 
 const StockManagement: React.FC<StockManagementPageProps> = ({ medications }) => {
     const [showLowStock, setShowLowStock] = useState(false);
 
     const filteredMedications = showLowStock
-        ? medications.filter((medication) => medication.quantity_on_hand <= medication.reorder_level)
-        : medications;
+        ? medications.data.filter((medication: Medication) => medication.quantity_on_hand <= medication.reorder_level)
+        : medications.data;
+
+    // Pagination navigation handler
+    const goToPage = (url: string | null) => {
+        if (url) {
+            window.location.href = url;
+        }
+    };
 
     return (
         <AppLayout>
@@ -80,6 +101,34 @@ const StockManagement: React.FC<StockManagementPageProps> = ({ medications }) =>
                                 })}
                             </TableBody>
                         </Table>
+                    </CardContent>
+                    <CardContent className="pt-0">
+                        <div className="flex items-center justify-between">
+                            <div className="text-sm text-gray-600">
+                                Showing {medications.from} to {medications.to} of {medications.total} medications
+                            </div>
+                            <div className="flex space-x-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={!medications.prev_page_url}
+                                    onClick={() => goToPage(medications.prev_page_url)}
+                                >
+                                    Previous
+                                </Button>
+                                <span className="flex items-center px-3 py-1 text-sm">
+                                    Page {medications.current_page} of {medications.last_page}
+                                </span>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={!medications.next_page_url}
+                                    onClick={() => goToPage(medications.next_page_url)}
+                                >
+                                    Next
+                                </Button>
+                            </div>
+                        </div>
                     </CardContent>
                 </Card>
             </div>

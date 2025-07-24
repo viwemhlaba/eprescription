@@ -55,7 +55,8 @@ class MedicationController extends Controller
             ])->toArray();
             $medication->activeIngredients()->sync($syncData);
         }
-        return response()->json($medication->load(['dosageForm', 'supplier', 'activeIngredients']), 201);
+        // Redirect to medications index with success message (Inertia response)
+        return redirect()->route('manager.medications.index')->with('success', 'Medication added successfully!');
     }
 
     /**

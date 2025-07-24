@@ -17,7 +17,7 @@ class MedicationSupplierFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => $this->faker->company(),
+            'name' => $this->faker->unique()->company(),
             'contact_person' => $this->faker->name(),
             'email' => $this->faker->unique()->safeEmail(),
         ];

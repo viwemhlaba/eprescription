@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
 import { Head, useForm } from '@inertiajs/react';
 import React, { useEffect } from 'react';
@@ -10,7 +11,18 @@ import { toast } from 'sonner';
 import { route } from 'ziggy-js';
 
 export default function MedicationCreate({ dosageForms = [], suppliers = [], activeIngredients = [] }) {
-    const { data, setData, post, processing, recentlySuccessful, errors } = useForm({
+    type Ingredient = { id: string; strength: string };
+    type MedicationForm = {
+        name: string;
+        dosage_form_id: string;
+        schedule: string;
+        current_sale_price: string;
+        supplier_id: string;
+        reorder_level: string;
+        quantity_on_hand: string;
+        active_ingredients: Ingredient[];
+    };
+    const { data, setData, post, processing, recentlySuccessful, errors } = useForm<MedicationForm>({
         name: '',
         dosage_form_id: '',
         schedule: '',
@@ -28,12 +40,14 @@ export default function MedicationCreate({ dosageForms = [], suppliers = [], act
     }, [recentlySuccessful]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        setData(e.target.name, e.target.value);
+        setData(e.target.name as keyof MedicationForm, e.target.value);
     };
 
     const handleIngredientChange = (idx: number, field: string, value: string) => {
         const updated = [...data.active_ingredients];
-        updated[idx][field] = value;
+        if (field === 'id' || field === 'strength') {
+            updated[idx][field] = value;
+        }
         setData('active_ingredients', updated);
     };
 
@@ -44,7 +58,7 @@ export default function MedicationCreate({ dosageForms = [], suppliers = [], act
     const removeIngredient = (idx: number) => {
         setData(
             'active_ingredients',
-            data.active_ingredients.filter((_: any, i: number) => i !== idx),
+            data.active_ingredients.filter((_, i) => i !== idx),
         );
     };
 
@@ -56,7 +70,7 @@ export default function MedicationCreate({ dosageForms = [], suppliers = [], act
     return (
         <AppLayout>
             <Head title="Add Medication" />
-            <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-6xl px-4 py-6 sm:px-8 lg:px-12">
                 <Heading title="Add New Medication" description="Enter details for a new medication." />
                 <Card className="mt-6">
                     <CardHeader>
@@ -71,21 +85,18 @@ export default function MedicationCreate({ dosageForms = [], suppliers = [], act
                             </div>
                             <div>
                                 <Label htmlFor="dosage_form_id">Dosage Form</Label>
-                                <select
-                                    id="dosage_form_id"
-                                    name="dosage_form_id"
-                                    value={data.dosage_form_id}
-                                    onChange={handleChange}
-                                    required
-                                    className="w-full rounded border px-2 py-1"
-                                >
-                                    <option value="">Select Dosage Form</option>
-                                    {dosageForms.map((df: any) => (
-                                        <option key={df.id} value={df.id}>
-                                            {df.name}
-                                        </option>
-                                    ))}
-                                </select>
+                                <Select value={data.dosage_form_id} onValueChange={(val) => setData('dosage_form_id', val)} required>
+                                    <SelectTrigger className="mt-1 w-full">
+                                        <SelectValue placeholder="Select Dosage Form" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {dosageForms.map((df: { id: string | number; name: string }) => (
+                                            <SelectItem key={df.id} value={df.id.toString()}>
+                                                {df.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                                 {errors.dosage_form_id && <div className="mt-1 text-xs text-red-500">{errors.dosage_form_id}</div>}
                             </div>
                             <div className="grid grid-cols-2 gap-4">
@@ -119,21 +130,18 @@ export default function MedicationCreate({ dosageForms = [], suppliers = [], act
                             </div>
                             <div>
                                 <Label htmlFor="supplier_id">Supplier</Label>
-                                <select
-                                    id="supplier_id"
-                                    name="supplier_id"
-                                    value={data.supplier_id}
-                                    onChange={handleChange}
-                                    required
-                                    className="w-full rounded border px-2 py-1"
-                                >
-                                    <option value="">Select Supplier</option>
-                                    {suppliers.map((s: any) => (
-                                        <option key={s.id} value={s.id}>
-                                            {s.name}
-                                        </option>
-                                    ))}
-                                </select>
+                                <Select value={data.supplier_id} onValueChange={(val) => setData('supplier_id', val)} required>
+                                    <SelectTrigger className="mt-1 w-full">
+                                        <SelectValue placeholder="Select Supplier" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {suppliers.map((s: { id: string | number; name: string }) => (
+                                            <SelectItem key={s.id} value={s.id.toString()}>
+                                                {s.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                                 {errors.supplier_id && <div className="mt-1 text-xs text-red-500">{errors.supplier_id}</div>}
                             </div>
                             <div className="grid grid-cols-2 gap-4">
@@ -166,19 +174,18 @@ export default function MedicationCreate({ dosageForms = [], suppliers = [], act
                                 <Label>Ingredients</Label>
                                 {data.active_ingredients.map((ingredient: any, idx: number) => (
                                     <div key={idx} className="mb-2 flex items-center space-x-2">
-                                        <select
-                                            value={ingredient.id}
-                                            onChange={(e) => handleIngredientChange(idx, 'id', e.target.value)}
-                                            required
-                                            className="rounded border px-2 py-1"
-                                        >
-                                            <option value="">Select Ingredient</option>
-                                            {activeIngredients.map((ai: any) => (
-                                                <option key={ai.id} value={ai.id}>
-                                                    {ai.name}
-                                                </option>
-                                            ))}
-                                        </select>
+                                        <Select value={ingredient.id} onValueChange={(val) => handleIngredientChange(idx, 'id', val)} required>
+                                            <SelectTrigger className="w-64 rounded border px-2 py-1">
+                                                <SelectValue placeholder="Select Ingredient" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {activeIngredients.map((ai: { id: string | number; name: string }) => (
+                                                    <SelectItem key={ai.id} value={ai.id.toString()}>
+                                                        {ai.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                         <Input
                                             value={ingredient.strength}
                                             onChange={(e) => handleIngredientChange(idx, 'strength', e.target.value)}
