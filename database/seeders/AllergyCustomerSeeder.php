@@ -5,7 +5,8 @@ namespace Database\Seeders;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\User;
-use App\Models\Allergy;
+use App\Models\Medication\ActiveIngredient;
+use App\Models\CustomerAllergy;
 
 class AllergyCustomerSeeder extends Seeder
 {
@@ -14,12 +15,30 @@ class AllergyCustomerSeeder extends Seeder
      */
     public function run(): void
     {
-        $allergies = Allergy::all();
+        $activeIngredients = ActiveIngredient::all();
 
-        User::where('role', 'customer')->each(function ($customer) use ($allergies) {
-            $customer->allergies()->sync(
-                $allergies->random(rand(0, 2))->pluck('id')->toArray()
-            );
+        if ($activeIngredients->isEmpty()) {
+            $this->command->warn('No active ingredients found to assign as allergies to customers.');
+            return;
+        }
+
+        User::where('role', 'customer')->each(function ($customer) use ($activeIngredients) {
+            // Clear existing allergies first
+            CustomerAllergy::where('user_id', $customer->id)->delete();
+            
+            // Assign 0-2 random active ingredient allergies to each customer
+            $randomIngredients = $activeIngredients->random(rand(0, 2));
+            
+            foreach ($randomIngredients as $ingredient) {
+                CustomerAllergy::create([
+                    'user_id' => $customer->id,
+                    'active_ingredient_id' => $ingredient->id,
+                ]);
+            }
+            
+            $this->command->info("Assigned {$randomIngredients->count()} ingredient allergies to customer: {$customer->name}");
         });
+
+        $this->command->info('Customer allergies seeded successfully!');
     }
 }

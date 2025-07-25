@@ -14,9 +14,19 @@ class MedicationTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        
+        // Seed roles
+        $this->artisan('db:seed', ['--class' => 'Database\\Seeders\\RoleSeeder']);
+    }
+
     public function test_manager_can_store_medication()
     {
         $user = User::factory()->create(['role' => 'manager']);
+        $user->assignRole('manager'); // Also assign Spatie role
+        
         $dosageForm = DosageForm::factory()->create();
         $supplier = MedicationSupplier::factory()->create();
         $ingredient = ActiveIngredient::factory()->create();
@@ -34,7 +44,8 @@ class MedicationTest extends TestCase
             ],
         ]);
 
-        $response->assertStatus(201);
+        $response->assertRedirect(route('manager.medications.index'));
+        $response->assertSessionHas('success', 'Medication added successfully!');
         $this->assertDatabaseHas('medications', ['name' => 'TestMed']);
         $this->assertDatabaseHas('active_ingredient_medication', [
             'strength' => '500mg',

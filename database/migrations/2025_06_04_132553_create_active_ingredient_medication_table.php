@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('active_ingredient_medication', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('medication_id')->constrained()->onDelete('cascade');
-            $table->foreignId('active_ingredient_id')->constrained()->onDelete('cascade');
+            $table->foreignId('medication_id')->constrained()->onDelete('no action'); // Changed to 'no action'
+            $table->foreignId('active_ingredient_id')->constrained()->onDelete('no action'); // Changed to 'no action'
             $table->string('strength'); // e.g., "500mg"
             $table->timestamps();
         });

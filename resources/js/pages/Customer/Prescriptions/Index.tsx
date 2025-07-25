@@ -1,4 +1,5 @@
 import Heading from '@/components/heading';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -20,6 +21,21 @@ interface Prescription {
     file_path: string;
     delivery_method: string | null;
 }
+
+const getStatusBadge = (status: string) => {
+    const statusColors = {
+        pending: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200',
+        approved: 'bg-blue-100 text-blue-800 hover:bg-blue-200',
+        dispensed: 'bg-green-100 text-green-800 hover:bg-green-200',
+        rejected: 'bg-red-100 text-red-800 hover:bg-red-200',
+    };
+
+    return (
+        <Badge className={statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'}>
+            {status.charAt(0).toUpperCase() + status.slice(1)}
+        </Badge>
+    );
+};
 
 export default function PrescriptionIndex({ prescriptions }: { prescriptions: Prescription[] }) {
     const [editModalOpen, setEditModalOpen] = useState(false);
@@ -168,7 +184,7 @@ export default function PrescriptionIndex({ prescriptions }: { prescriptions: Pr
                                 {filteredPrescriptions.map((p) => (
                                     <TableRow key={p.id} className={isRepeatOverdue(p.next_repeat_date) ? 'bg-red-50 dark:bg-red-900/30' : ''}>
                                         <TableCell>{p.name}</TableCell>
-                                        <TableCell className="capitalize">{p.status}</TableCell>
+                                        <TableCell>{getStatusBadge(p.status)}</TableCell>
                                         <TableCell>{new Date(p.created_at).toLocaleString()}</TableCell>
                                         <TableCell className="capitalize">
                                             {p.delivery_method === 'pickup' && 'Pick up'}

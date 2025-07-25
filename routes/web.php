@@ -169,6 +169,13 @@ Route::middleware(['auth'])->prefix('api')->name('api.')->group(function () {
     Route::post('/check-medication-allergy', [AllergyCheckController::class, 'checkMedicationAllergy'])->name('check.medication.allergy');
     Route::get('/user-allergies/{user_id}', [AllergyCheckController::class, 'getUserAllergies'])->name('user.allergies');
     Route::get('/medication-ingredients/{medication_id}', [AllergyCheckController::class, 'getMedicationIngredients'])->name('medication.ingredients');
+    
+    // Pharmacist API Routes
+    Route::middleware(['role:pharmacist'])->prefix('pharmacist')->group(function () {
+        Route::get('/requested-repeats', [PharmacistPrescriptionController::class, 'getRequestedRepeats'])->name('pharmacist.requested.repeats');
+        Route::post('/repeats/{prescription}/dispense', [PharmacistPrescriptionController::class, 'dispenseRepeat'])->name('pharmacist.dispense.repeat');
+        Route::post('/repeats/{prescription}/reject', [PharmacistPrescriptionController::class, 'rejectRepeat'])->name('pharmacist.reject.repeat');
+    });
 });
 
 require __DIR__.'/settings.php';

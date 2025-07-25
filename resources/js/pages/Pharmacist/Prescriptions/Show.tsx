@@ -103,14 +103,20 @@ export default function Show({ prescription, dispensed_history, totals, current_
     };
 
     const getStatusBadge = (status: string) => {
-        const variants = {
-            pending: 'secondary',
-            approved: 'default',
-            dispensed: 'success',
-            rejected: 'destructive',
-        } as const;
+        const statusConfig = {
+            pending: { variant: 'secondary' as const, className: 'bg-yellow-100 text-yellow-800' },
+            approved: { variant: 'default' as const, className: 'bg-blue-100 text-blue-800' },
+            dispensed: { variant: 'default' as const, className: 'bg-green-100 text-green-800' },
+            rejected: { variant: 'destructive' as const, className: 'bg-red-100 text-red-800' },
+        };
 
-        return <Badge variant={variants[status as keyof typeof variants] || 'outline'}>{status.charAt(0).toUpperCase() + status.slice(1)}</Badge>;
+        const config = statusConfig[status as keyof typeof statusConfig] || { variant: 'outline' as const, className: '' };
+
+        return (
+            <Badge variant={config.variant} className={config.className}>
+                {status.charAt(0).toUpperCase() + status.slice(1)}
+            </Badge>
+        );
     };
 
     return (

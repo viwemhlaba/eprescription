@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('order_items', function (Blueprint $table) {
             $table->id();
             $table->foreignId('order_id')->constrained()->onDelete('cascade');
-            $table->foreignId('prescription_id')->constrained()->onDelete('cascade');
+            $table->foreignId('prescription_id')->constrained()->onDelete('no action'); // Changed to 'no action' for SQL Server
             $table->timestamps();
             $table->softDeletes();
         });

@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Mail\PrescriptionApprovedMail;
 use App\Mail\PrescriptionReadyCollectionMail;
+use App\Mail\RepeatRejectedMail;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -1558,6 +1559,122 @@ class PharmacistPrescriptionController extends Controller
             ]);
             
             return redirect()->back()->with('error', 'Failed to generate PDF.');
+        }
+    }
+
+    /**
+     * API endpoint to get prescriptions with requested repeats
+     */
+    public function getRequestedRepeats()
+    {
+        try {
+            $repeats = Prescription::with(['user.customer', 'doctor'])
+                ->where('status', 'repeat_pending')
+                ->whereRaw('repeats_used < repeats_total')
+                ->latest('updated_at')
+                ->get()
+                ->map(function ($prescription) {
+                    return [
+                        'id' => $prescription->id,
+                        'prescription_name' => $prescription->name,
+                        'customer_name' => $prescription->user->name ?? 'Unknown',
+                        'customer_surname' => $prescription->user->customer->surname ?? '',
+                        'patient_id_number' => $prescription->user->customer->id_number ?? $prescription->patient_id_number ?? 'Not Available',
+                        'doctor_name' => $prescription->doctor->name ?? 'Unknown Doctor',
+                        'request_date' => $prescription->updated_at->format('Y-m-d H:i'),
+                        'repeats_used' => $prescription->repeats_used,
+                        'repeats_total' => $prescription->repeats_total,
+                        'next_repeat_date' => $prescription->next_repeat_date ? Carbon::parse($prescription->next_repeat_date)->format('Y-m-d') : null,
+                        'delivery_method' => $prescription->delivery_method,
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'data' => $repeats
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load repeat requests.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * API endpoint to dispense a repeat prescription
+     */
+    public function dispenseRepeat(Request $request, Prescription $prescription)
+    {
+        try {
+            // Validate that this prescription can be dispensed
+            if ($prescription->status !== 'repeat_pending') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This prescription is not pending a repeat request.'
+                ], 400);
+            }
+
+            if ($prescription->repeats_used >= $prescription->repeats_total) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No more repeats available for this prescription.'
+                ], 400);
+            }
+
+            // Mark as approved so it can be dispensed
+            $prescription->update(['status' => 'approved']);
+
+            // Redirect to the regular dispense page for this prescription
+            return response()->json([
+                'success' => true,
+                'message' => 'Repeat approved successfully. Redirecting to dispense page...',
+                'redirect_url' => route('pharmacist.prescriptions.dispense.show', $prescription->id)
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to process repeat dispensing.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * API endpoint to reject a repeat request
+     */
+    public function rejectRepeat(Request $request, Prescription $prescription)
+    {
+        try {
+            $validated = $request->validate([
+                'note' => 'required|string|max:500'
+            ]);
+
+            // Update the prescription to reject the repeat request
+            $prescription->update([
+                'status' => 'rejected',
+                'notes' => ($prescription->notes ?? '') . "\n\nRepeat rejected: " . $validated['note'] . ' (Rejected by pharmacist on ' . now()->format('Y-m-d H:i') . ')'
+            ]);
+
+            // Send email notification to customer about rejection
+            if ($prescription->user && $prescription->user->email) {
+                Mail::to($prescription->user->email)->send(new RepeatRejectedMail($prescription, $validated['note']));
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Repeat request has been rejected successfully. Customer has been notified via email.'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to reject repeat request: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to reject repeat request.',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 }

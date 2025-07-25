@@ -13,10 +13,10 @@ return new class extends Migration
     {
         Schema::create('dispensed_items', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('prescription_id')->constrained()->onDelete('cascade');
-            $table->foreignId('prescription_item_id')->constrained()->onDelete('cascade');
-            $table->foreignId('medication_id')->constrained()->onDelete('cascade');
-            $table->foreignId('pharmacist_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('prescription_id')->constrained()->onDelete('no action'); // Changed to 'no action'
+            $table->foreignId('prescription_item_id')->constrained()->onDelete('no action'); // Changed to 'no action'
+            $table->foreignId('medication_id')->constrained()->onDelete('no action'); // Changed to 'no action'
+            $table->foreignId('pharmacist_id')->constrained('users')->onDelete('no action'); // Changed to 'no action'
             $table->integer('quantity_dispensed');
             $table->decimal('cost', 10, 2);
             $table->text('notes')->nullable();

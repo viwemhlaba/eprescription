@@ -1,4 +1,5 @@
 import Heading from '@/components/heading';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -39,6 +40,21 @@ interface ManualPrescription {
     is_manual: true;
     patient_id_number?: string;
 }
+
+const getStatusBadge = (status: string) => {
+    const statusColors = {
+        pending: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200',
+        approved: 'bg-blue-100 text-blue-800 hover:bg-blue-200',
+        dispensed: 'bg-green-100 text-green-800 hover:bg-green-200',
+        rejected: 'bg-red-100 text-red-800 hover:bg-red-200',
+    };
+
+    return (
+        <Badge className={statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'}>
+            {status.charAt(0).toUpperCase() + status.slice(1)}
+        </Badge>
+    );
+};
 
 export default function PrescriptionIndex({
     uploadedPrescriptions,
@@ -186,7 +202,7 @@ export default function PrescriptionIndex({
                                         <TableRow key={p.id}>
                                             <TableCell>{p.customer_name || 'N/A'}</TableCell>
                                             <TableCell>{p.prescription_name || 'N/A'}</TableCell>
-                                            <TableCell className="capitalize">{p.status}</TableCell>
+                                            <TableCell>{getStatusBadge(p.status)}</TableCell>
                                             <TableCell>{new Date(p.upload_date).toLocaleString()}</TableCell>
                                             <TableCell className="capitalize">
                                                 {p.delivery_method === 'pickup' && 'Pick up'}
@@ -307,7 +323,7 @@ export default function PrescriptionIndex({
                                             <TableCell>{p.customer_name || 'N/A'}</TableCell>
                                             <TableCell>{p.prescription_name || 'N/A'}</TableCell>
                                             <TableCell>{p.doctor_name || 'N/A'}</TableCell>
-                                            <TableCell className="capitalize">{p.status}</TableCell>
+                                            <TableCell>{getStatusBadge(p.status)}</TableCell>
                                             <TableCell>{new Date(p.created_date).toLocaleString()}</TableCell>
                                             <TableCell className="capitalize">
                                                 {p.delivery_method === 'pickup' && 'Pick up'}
@@ -362,13 +378,16 @@ export default function PrescriptionIndex({
                                                             </DropdownMenuItem>
                                                         ) : (
                                                             <DropdownMenuItem asChild>
-                                                                <Link
+                                                                <a
                                                                     href={route('pharmacist.prescriptions.manual.generatePdf', p.id)}
                                                                     className="flex items-center gap-2 text-green-600"
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    download
                                                                 >
                                                                     <Download className="h-4 w-4" />
                                                                     Generate PDF
-                                                                </Link>
+                                                                </a>
                                                             </DropdownMenuItem>
                                                         )}
 

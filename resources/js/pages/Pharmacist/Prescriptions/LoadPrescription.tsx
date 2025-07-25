@@ -111,7 +111,12 @@ const LoadPrescription: React.FC<LoadPrescriptionProps> = ({
         customer_id: prescription.user_id?.toString() || '', // For manual prescriptions
         patient_id_number: prescription.patient_id_number || '',
         doctor_id: prescription.doctor_id?.toString() || '',
-        items: existingPrescriptionItems.length > 0 ? existingPrescriptionItems : [{ medication_id: null, quantity: 1, instructions: '' }],
+        // For uploaded prescriptions (not manual), start with empty items array
+        // For manual prescriptions, use existing items if they exist
+        items:
+            prescription.is_manual && existingPrescriptionItems.length > 0
+                ? existingPrescriptionItems
+                : [{ medication_id: null, quantity: 1, instructions: '' }],
         status: prescription.status,
         reason_for_rejection: prescription.reason_for_rejection || '',
         notes: '',
@@ -351,7 +356,7 @@ const LoadPrescription: React.FC<LoadPrescriptionProps> = ({
                                             disabled={doctors.length === 0}
                                         >
                                             <SelectTrigger className="flex-grow">
-                                                <SelectValue placeholder="Select a Doctor" />
+                                                <SelectValue placeholder="Choose a doctor..." />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {doctors.length === 0 && (
@@ -361,13 +366,13 @@ const LoadPrescription: React.FC<LoadPrescriptionProps> = ({
                                                 )}
                                                 {doctors.map((doctor) => (
                                                     <SelectItem key={doctor.id} value={doctor.id.toString()}>
-                                                        {doctor.name}
+                                                        Dr. {doctor.name} {doctor.surname} - {doctor.practice_number}
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
                                         <Button type="button" onClick={openDoctorModal} size="sm" variant="outline" className="shrink-0">
-                                            + Add Doctor
+                                            + Add New Doctor
                                         </Button>
                                     </div>
                                     {errors.doctor_id && <p className="mt-1 text-sm text-red-500">{errors.doctor_id}</p>}
@@ -481,19 +486,21 @@ const LoadPrescription: React.FC<LoadPrescriptionProps> = ({
                                 >
                                     {processing && data.status === 'approved' ? 'Approving...' : 'Approve Prescription'}
                                 </Button>
-                                <Button
-                                    type="submit"
-                                    onClick={() => setData('status', 'dispensed')}
-                                    disabled={
-                                        processing ||
-                                        prescription.status === 'dispensed' ||
-                                        prescription.status === 'pending' ||
-                                        prescription.status === 'rejected'
-                                    }
-                                    className="w-full sm:w-auto"
-                                >
-                                    {processing && data.status === 'dispensed' ? 'Dispensing...' : 'Dispense Medication'}
-                                </Button>
+                                {prescription.is_manual && (
+                                    <Button
+                                        type="submit"
+                                        onClick={() => setData('status', 'dispensed')}
+                                        disabled={
+                                            processing ||
+                                            prescription.status === 'dispensed' ||
+                                            prescription.status === 'pending' ||
+                                            prescription.status === 'rejected'
+                                        }
+                                        className="w-full sm:w-auto"
+                                    >
+                                        {processing && data.status === 'dispensed' ? 'Dispensing...' : 'Dispense Medication'}
+                                    </Button>
+                                )}
                                 <Button
                                     type="submit"
                                     onClick={() => setData('status', 'rejected')}

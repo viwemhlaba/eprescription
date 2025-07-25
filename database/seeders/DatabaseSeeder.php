@@ -10,10 +10,19 @@ use Database\Seeders\Customer\PrescriptionSeeder;
 use Database\Seeders\DoctorSeeder;
 use Database\Seeders\MedicationSeeder;
 use Database\Seeders\PrescriptionItemSeeder;
-use Database\Seeders\UserSeeder; // Add this line
-use Database\Seeders\MedicationSupplierSeeder; // Add this line
-use Database\Seeders\StockOrderSeeder; // Add this line
+use Database\Seeders\UserSeeder;
+use Database\Seeders\MedicationSupplierSeeder;
+use Database\Seeders\StockOrderSeeder;
 use Database\Seeders\RoleSeeder;
+use Database\Seeders\PharmacySeeder;
+use Database\Seeders\ActiveIngredientSeeder;
+use Database\Seeders\ActiveIngredientMedicationSeeder;
+use Database\Seeders\AllergySeeder;
+use Database\Seeders\AllergyCustomerSeeder;
+use Database\Seeders\DosageFormSeeder;
+use Database\Seeders\PharmacistSeeder;
+use Database\Seeders\CustomerOrderSeeder;
+use Database\Seeders\DispensedItemSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -22,17 +31,40 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        $this->command->info('🌱 Starting database seeding...');
 
         $this->call([
+            // Core system setup
             RoleSeeder::class,
-            UserSeeder::class, // Add this line
+            UserSeeder::class,
+            
+            // Basic data
+            DosageFormSeeder::class,
+            ActiveIngredientSeeder::class,
+            AllergySeeder::class,
+            MedicationSupplierSeeder::class,
+            
+            // Pharmacy setup
+            PharmacySeeder::class,
             DoctorSeeder::class,
+            
+            // Medications and relationships
             MedicationSeeder::class,
+            ActiveIngredientMedicationSeeder::class,
+            
+            // Customers and relationships
             CustomerSeeder::class,
+            AllergyCustomerSeeder::class,
+            
+            // Prescriptions and orders
             PrescriptionSeeder::class,
             PrescriptionItemSeeder::class,
+            CustomerOrderSeeder::class,
+            
+            // Stock management
             StockOrderSeeder::class,
         ]);
+
+        $this->command->info('✅ Database seeding completed successfully!');
     }
 }

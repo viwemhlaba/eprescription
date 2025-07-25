@@ -82,7 +82,11 @@ class PharmacistProfile extends Model
     {
         if (!$this->license_expiry) return false;
         
-        return Carbon::parse($this->license_expiry)->diffInDays(Carbon::now()) <= 30;
+        $expiryDate = Carbon::parse($this->license_expiry);
+        $now = Carbon::now();
+        
+        // Check if license expires in the future AND within 30 days
+        return $expiryDate->isFuture() && $expiryDate->diffInDays($now) <= 30;
     }
 
     /**

@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('stock_order_items', function (Blueprint $table) {
             $table->id();
             $table->foreignId('stock_order_id')->constrained('stock_orders')->onDelete('cascade');
-            $table->foreignId('medication_id')->constrained()->onDelete('cascade');
+            $table->foreignId('medication_id')->constrained()->onDelete('no action'); // Changed to 'no action'
             $table->integer('quantity');
             $table->timestamps();
         });
